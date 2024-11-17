@@ -2,13 +2,11 @@ import { Engine } from '../engine/Engine.js';
 import { ObjLoader } from '../engine/ObjLoader.js';
 import { Entity } from '../engine/Entity.js';
 import { Material } from '../engine/Material.js';
+import { Light } from '../engine/Light.js';
 
-async function createObjEntity(url, gl) {
+async function createObjEntity(url, gl, light, camera) {
     const response = await fetch(url);
     const objData = ObjLoader.parse(await response.text());
-
-    // Create the entity
-    const entity = new Entity(objData, gl);
 
     // Vertex shader for Blinn-Phong
     const vertexShaderSource = `
@@ -67,16 +65,17 @@ async function createObjEntity(url, gl) {
         }
     `;
 
+    // Create and compile material
     const material = new Material(gl, vertexShaderSource, fragmentShaderSource);
     material.compile();
 
-    // Set uniform values
-    material.setUniforms({
-        'uLight.position': [5.0, 5.0, 5.0],
-        'uLight.color': [1.0, 1.0, 1.0],
-    });
+    // Set static uniforms
+    material.setUniform('uLight.position', light.position);
+    material.setUniform('uLight.color', light.color.map(c => c * light.intensity));
+    material.setUniform('uViewPos', camera.position);
 
-    entity.material = material;
+    // Create the entity with the material
+    const entity = new Entity(objData, gl, material);
     return entity;
 }
 
@@ -86,29 +85,26 @@ async function main() {
 
     const gl = engine.renderer.gl;
 
+    // Configure the camera
+    const camera = engine.scene.camera;
+    camera.position = [0, 2, 10];
+    camera.target = [0, 1, 0]; // Look at the cube
+
+    // Add a light to the scene
+    const light = new Light("point", [1.0, 1.0, 1.0], 1.0);
+    light.position = [5.0, 5.0, 5.0];
+    engine.scene.addLight(light);
+
     // Create and configure the cube entity with the material
-    const objEntity = await createObjEntity('./assets/cube.obj', gl);
+    const objEntity = await createObjEntity('./assets/cube.obj', gl, light, camera);
     objEntity.position = [0, 1, -5];
     objEntity.scale = [1, 1, 1];
     objEntity.rotation = [0, Math.PI / 4, 0];
 
     engine.scene.addEntity(objEntity);
 
-    console.log('Vertices:', objEntity.vertices);
-    console.log('Indices:', objEntity.indices);
-    console.log("Cube Position:", objEntity.position);
-    console.log("Cube Rotation:", objEntity.rotation);
-    console.log("Cube Scale:", objEntity.scale);
-
-    // Configure the camera
-    const camera = engine.scene.camera;
-    camera.position = [0, 2, 10]; // Ensure it's positioned behind and above the cube
-    camera.target = [0, 1, 0];   // Point directly at the cube
-
-    // Set the dynamic uniform for the camera's position
-    objEntity.material.setUniforms({
-        uViewPos: camera.position,
-    });
+    console.log('Entities:', engine.scene.entities);
+    console.log('Lights:', engine.scene.lights);
 
     // Start the engine
     engine.start();
