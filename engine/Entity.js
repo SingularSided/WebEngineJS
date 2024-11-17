@@ -1,6 +1,9 @@
 import { Transformable } from './Transformable.js';
 import { mat4 } from '../node_modules/gl-matrix/esm/index.js';
 
+/**
+ * Represents a renderable entity in the scene.
+ */
 export class Entity extends Transformable {
     /**
      * Creates a renderable entity.
@@ -53,11 +56,12 @@ export class Entity extends Transformable {
     }
 
     /**
-     * Draws the entity using its material and camera.
+     * Draws the entity using its material, camera, and scene lighting.
      * @param {WebGLRenderingContext} gl - The WebGL context.
      * @param {Camera} camera - The active camera for the scene.
+     * @param {Scene} scene - The scene containing lighting and other context.
      */
-    draw(gl, camera) {
+    draw(gl, camera, scene) {
         if (!this.material || !this.material.shaderProgram) {
             console.error("Entity is missing a material or its shader program is not compiled.");
             return;
@@ -95,16 +99,13 @@ export class Entity extends Transformable {
         }
 
         // Pass the view and projection matrices from the camera
-        const uViewMatrixLoc = material.uniformLocations['uViewMatrix'];
-        const uProjectionMatrixLoc = material.uniformLocations['uProjectionMatrix'];
-        if (uViewMatrixLoc) {
-            gl.uniformMatrix4fv(uViewMatrixLoc, false, camera.getViewMatrix());
-        }
-        if (uProjectionMatrixLoc) {
-            gl.uniformMatrix4fv(uProjectionMatrixLoc, false, camera.getProjectionMatrix());
-        }
+        material.setUniform('uViewMatrix', camera.getViewMatrix());
+        material.setUniform('uProjectionMatrix', camera.getProjectionMatrix());
 
-        // Update additional uniforms defined in the material
+        // Apply lighting to the material
+        scene.applyLightsToMaterial(material);
+
+        // Apply material uniforms
         material.applyUniforms();
 
         // Debugging output for drawing

@@ -4,9 +4,6 @@ export class Renderer {
         this.gl = this.canvas.getContext('webgl');
     }
 
-    /**
-     * Initializes the renderer by setting up the WebGL context.
-     */
     init() {
         const gl = this.gl;
 
@@ -16,25 +13,24 @@ export class Renderer {
         console.log('Renderer initialized.');
     }
 
-    /**
-     * Renders the scene, including entities and lights.
-     * @param {Scene} scene - The scene to render.
-     */
     render(scene) {
         const gl = this.gl;
 
-        // Clear the canvas and depth buffer
+        // Clear the screen
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // Update the camera matrices
+        // Get the active camera
         const camera = scene.camera;
 
-        // Render each entity
+        // Get light data from the scene
+        const lights = scene.getLightData();
+
+        // Render all entities
         scene.entities.forEach(entity => {
             const material = entity.material;
 
             if (!material || !material.shaderProgram) {
-                console.error("Entity missing material or uncompiled shader program.");
+                console.error("Entity is missing a material or its shader program is not compiled.");
                 return;
             }
 
@@ -42,7 +38,7 @@ export class Renderer {
             const shaderProgram = material.shaderProgram;
             gl.useProgram(shaderProgram);
 
-            // Set the camera's view and projection matrices
+            // Pass camera matrices
             const uViewMatrixLoc = material.uniformLocations['uViewMatrix'];
             const uProjectionMatrixLoc = material.uniformLocations['uProjectionMatrix'];
 
@@ -54,30 +50,45 @@ export class Renderer {
             }
 
             // Pass light data to the shader
-            const lights = scene.lights;
             lights.forEach((light, index) => {
                 const lightBase = `uLights[${index}]`;
 
                 const uLightPositionLoc = material.uniformLocations[`${lightBase}.position`];
-                const uLightColorLoc = material.uniformLocations[`${lightBase}.color`];
-                const uLightTypeLoc = material.uniformLocations[`${lightBase}.type`];
+                const uLightAmbientLoc = material.uniformLocations[`${lightBase}.ambient`];
+                const uLightDiffuseLoc = material.uniformLocations[`${lightBase}.diffuse`];
+                const uLightSpecularLoc = material.uniformLocations[`${lightBase}.specular`];
 
                 if (uLightPositionLoc) {
-                    gl.uniform3fv(uLightPositionLoc, light.position);
+                    console.log(`Setting position for light ${index}:`, light.position);
+                    gl.uniform3fv(uLightPositionLoc, new Float32Array(light.position));
                 }
-                if (uLightColorLoc) {
-                    gl.uniform3fv(uLightColorLoc, light.color.map(c => c * light.intensity));
+                if (uLightAmbientLoc) {
+                    console.log(`Setting ambient for light ${index}:`, light.ambient);
+                    gl.uniform3fv(uLightAmbientLoc, new Float32Array(light.ambient));
                 }
-                if (uLightTypeLoc) {
-                    gl.uniform1i(uLightTypeLoc, light.type === 'directional' ? 1 : 0); // Example: 1 for directional, 0 for point
+                if (uLightDiffuseLoc) {
+                    console.log(`Setting diffuse for light ${index}:`, light.diffuse);
+                    gl.uniform3fv(uLightDiffuseLoc, new Float32Array(light.diffuse));
+                }
+                if (uLightSpecularLoc) {
+                    console.log(`Setting specular for light ${index}:`, light.specular);
+                    gl.uniform3fv(uLightSpecularLoc, new Float32Array(light.specular));
                 }
             });
 
-            // Update any additional uniforms from the material
+            // Pass number of active lights
+            const uNumLightsLoc = material.uniformLocations['uNumLights'];
+            if (uNumLightsLoc) {
+                console.log(`Setting uNumLights:`, lights.length);
+                gl.uniform1i(uNumLightsLoc, lights.length);
+            }
+
+            // Apply material-specific uniforms
             material.applyUniforms();
 
             // Draw the entity
-            entity.draw(gl, camera);
+            entity.draw(gl, camera, scene);
         });
     }
+
 }

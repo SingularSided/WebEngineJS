@@ -30,7 +30,7 @@ export class Engine {
         this.update(deltaTime);
         this.render();
 
-        requestAnimationFrame(this.gameLoop.bind(this));
+        //requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     start() {

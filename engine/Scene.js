@@ -1,22 +1,25 @@
 import { Camera } from "./Camera.js";
 
+/**
+ * Represents a scene containing entities, lights, and a camera.
+ */
 class Scene {
     constructor() {
         this.entities = []; // Array of all renderable entities
-        this.camera = new Camera(); // The active camera
         this.lights = []; // Array of all lights in the scene
+        this.camera = new Camera(); // The active camera
     }
 
     /**
-     * Initialize the scene by updating the camera.
-     * @param {Object} gl - The WebGL context.
+     * Initializes the scene, ensuring the camera is set up.
+     * @param {HTMLCanvasElement} canvas - The canvas used for rendering.
      */
-    init(gl) {
-        this.camera.update(gl); // Initialize the camera matrices
+    init(canvas) {
+        this.camera.update(canvas); // Initialize the camera matrices
     }
 
     /**
-     * Add an entity to the scene.
+     * Adds an entity to the scene.
      * @param {Entity} entity - The entity to add.
      */
     addEntity(entity) {
@@ -24,7 +27,7 @@ class Scene {
     }
 
     /**
-     * Remove an entity from the scene.
+     * Removes an entity from the scene.
      * @param {Entity} entity - The entity to remove.
      */
     removeEntity(entity) {
@@ -32,7 +35,7 @@ class Scene {
     }
 
     /**
-     * Add a light to the scene.
+     * Adds a light to the scene.
      * @param {Light} light - The light to add.
      */
     addLight(light) {
@@ -40,7 +43,7 @@ class Scene {
     }
 
     /**
-     * Remove a light from the scene.
+     * Removes a light from the scene.
      * @param {Light} light - The light to remove.
      */
     removeLight(light) {
@@ -48,25 +51,49 @@ class Scene {
     }
 
     /**
-     * Update the scene by updating all entities, lights, and the camera.
+     * Updates all entities, lights, and the camera in the scene.
      * @param {number} deltaTime - Time since the last update (in seconds).
      * @param {Object} input - Input handler for user controls.
-     * @param {Object} canvas - The WebGL canvas for projection calculations.
+     * @param {HTMLCanvasElement} canvas - The canvas used for rendering.
      */
     update(deltaTime, input, canvas) {
-        this.camera.update(canvas); // Update the camera for projection calculations
+        // Update camera for projection and view matrix calculations
+        this.camera.update(canvas);
+
+        // Update entities
         this.entities.forEach(entity => entity.update(deltaTime));
+
+        // Update lights
         this.lights.forEach(light => light.update());
     }
 
     /**
-     * Prepare lighting data for rendering.
-     * This gathers light properties into an object that can be passed to the renderer.
-     * @returns {Array} - Array of light data for the shader.
+     * Prepares light data and applies it to a material.
+     * @param {Material} material - The material to update with light data.
+     */
+    applyLightsToMaterial(material) {
+        this.lights.forEach((light, index) => {
+            if (index >= 8) {
+                console.warn("Maximum light limit (8) reached.");
+                return;
+            }
+            light.applyToMaterial(material, index);
+        });
+
+        // Inform the shader how many lights are active
+        material.setUniform('uNumLights', this.lights.length);
+    }
+
+
+    /**
+     * Prepares light data for rendering.
+     * This gathers light properties into an array of objects for use in shaders.
+     * @returns {Array<Object>} - Array of light data objects.
      */
     getLightData() {
         return this.lights.map(light => light.getLightData());
     }
+
 }
 
 export default Scene;
