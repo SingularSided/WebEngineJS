@@ -17,6 +17,7 @@ export class Entity extends Transformable {
         this.scale = [1, 1, 1];   // Default scale
         this.modelMatrix = mat4.create(); // Initialize model matrix
 
+
         // Upload vertex data
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);

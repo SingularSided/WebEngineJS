@@ -1,31 +1,30 @@
 export class Material {
-    constructor(gl, vertexShaderSource, fragmentShaderSource) {
+    constructor(gl, vertexShaderSource, fragmentShaderSource, uniforms = {}) {
         this.gl = gl;
-        this.program = this.createShaderProgram(vertexShaderSource, fragmentShaderSource);
-        this.uniformLocations = {}; // Cache for uniforms
-        this.attributeLocations = {}; // Cache for attributes
+        this.vertexShaderSource = vertexShaderSource;
+        this.fragmentShaderSource = fragmentShaderSource;
+        this.uniforms = uniforms;
+        this.shaderProgram = null; // Compiled shader program
+        this.attributeLocations = {}; // Cached attribute locations
+        this.uniformLocations = {}; // Cached uniform locations
     }
 
-    createShaderProgram(vertexSource, fragmentSource) {
+    compile() {
         const gl = this.gl;
 
-        const vertexShader = this.compileShader(gl.VERTEX_SHADER, vertexSource);
-        const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+        const vertexShader = this.compileShader(gl.VERTEX_SHADER, this.vertexShaderSource);
+        const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, this.fragmentShaderSource);
 
-        const program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
+        this.shaderProgram = gl.createProgram();
+        gl.attachShader(this.shaderProgram, vertexShader);
+        gl.attachShader(this.shaderProgram, fragmentShader);
+        gl.linkProgram(this.shaderProgram);
 
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error('Shader program linking failed:', gl.getProgramInfoLog(program));
-            return null;
+        if (!gl.getProgramParameter(this.shaderProgram, gl.LINK_STATUS)) {
+            console.error('Shader program linking failed:', gl.getProgramInfoLog(this.shaderProgram));
         }
 
-        // Cache uniform and attribute locations
-        this.cacheLocations(program);
-
-        return program;
+        this.cacheLocations();
     }
 
     compileShader(type, source) {
@@ -39,45 +38,38 @@ export class Material {
             gl.deleteShader(shader);
             return null;
         }
+
         return shader;
     }
 
-    cacheLocations(program) {
+    cacheLocations() {
         const gl = this.gl;
-        const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-        const numAttributes = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
 
-        for (let i = 0; i < numUniforms; i++) {
-            const uniform = gl.getActiveUniform(program, i);
-            this.uniformLocations[uniform.name] = gl.getUniformLocation(program, uniform.name);
-        }
-
+        const numAttributes = gl.getProgramParameter(this.shaderProgram, gl.ACTIVE_ATTRIBUTES);
         for (let i = 0; i < numAttributes; i++) {
-            const attribute = gl.getActiveAttrib(program, i);
-            this.attributeLocations[attribute.name] = gl.getAttribLocation(program, attribute.name);
+            const attribInfo = gl.getActiveAttrib(this.shaderProgram, i);
+            this.attributeLocations[attribInfo.name] = gl.getAttribLocation(this.shaderProgram, attribInfo.name);
+        }
+
+        const numUniforms = gl.getProgramParameter(this.shaderProgram, gl.ACTIVE_UNIFORMS);
+        for (let i = 0; i < numUniforms; i++) {
+            const uniformInfo = gl.getActiveUniform(this.shaderProgram, i);
+            this.uniformLocations[uniformInfo.name] = gl.getUniformLocation(this.shaderProgram, uniformInfo.name);
         }
     }
 
-    use() {
-        this.gl.useProgram(this.program);
-    }
-
-    setUniform(name, type, value) {
+    setUniforms(uniforms) {
         const gl = this.gl;
-        const location = this.uniformLocations[name];
+        Object.entries(uniforms).forEach(([name, value]) => {
+            const location = this.uniformLocations[name];
+            if (!location) return;
 
-        if (!location) {
-            console.warn(`Uniform ${name} not found in shader.`);
-            return;
-        }
-
-        if (type === 'mat4') {
-            gl.uniformMatrix4fv(location, false, value);
-        } else if (type === 'vec3') {
-            gl.uniform3fv(location, value);
-        } else if (type === 'float') {
-            gl.uniform1f(location, value);
-        }
-        // Extend as needed for other uniform types
+            if (Array.isArray(value)) {
+                if (value.length === 4) gl.uniform4fv(location, value);
+                else if (value.length === 3) gl.uniform3fv(location, value);
+            } else if (typeof value === 'number') {
+                gl.uniform1f(location, value);
+            }
+        });
     }
 }
