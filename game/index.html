@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGL Game Engine</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+<!-- WebGL canvas -->
+<canvas id="webgl-canvas"></canvas>
+
+<!-- Your main JavaScript -->
+<script type="module" src="./main.js"></script>
+
+<script>
+  // Automatically adjust the canvas size to fit the window
+  const canvas = document.getElementById('webgl-canvas');
+  const resizeCanvas = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  };
+
+  // Resize on window resize
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas(); // Initialize to set the size immediately
+</script>
+</body>
+</html>
