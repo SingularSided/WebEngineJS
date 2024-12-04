@@ -5,94 +5,100 @@ import { Material } from '../engine/Material.js';
 import { Light } from '../engine/Light.js';
 
 /**
- * Creates an entity with a Blinn-Phong material applied.
- * @param {string} url - The URL to the OBJ file.
+ * Creates an entity with a Blinn-Phong material and a texture applied.
+ * @param {string} objUrl - The URL to the OBJ file.
+ * @param {string} textureUrl - The URL to the texture image.
  * @param {WebGLRenderingContext} gl - The WebGL context.
  * @returns {Entity} - The configured entity.
  */
-async function createObjEntity(url, gl) {
-    const response = await fetch(url);
+async function createObjEntityWithTexture(objUrl, textureUrl, gl) {
+    const response = await fetch(objUrl);
     const objData = ObjLoader.parse(await response.text());
 
-    // Vertex shader for Blinn-Phong
     const vertexShaderSource = `
         attribute vec3 aPosition;
         attribute vec3 aNormal;
-
+        attribute vec2 aTexCoord; // Texture coordinate attribute
+        
         uniform mat4 uModelMatrix;
         uniform mat4 uViewMatrix;
         uniform mat4 uProjectionMatrix;
-
+        
         varying vec3 vNormal;
         varying vec3 vFragPos;
-
+        varying vec2 vTexCoord;
+        
         void main() {
             vec4 fragPos = uModelMatrix * vec4(aPosition, 1.0);
             vFragPos = fragPos.xyz;
-
+        
             vNormal = normalize(mat3(uModelMatrix) * aNormal);
-
+            vTexCoord = aTexCoord; // Pass texture coordinate
+        
             gl_Position = uProjectionMatrix * uViewMatrix * fragPos;
         }
     `;
 
-    // Fragment shader for Blinn-Phong
     const fragmentShaderSource = `
         precision mediump float;
-
+        
         struct Light {
             vec3 position;
             vec3 ambient;
             vec3 diffuse;
             vec3 specular;
         };
-
-        uniform Light uLights[8]; // Support for up to 8 lights
-        uniform int uNumLights;  // Number of active lights
-        uniform vec3 uViewPos;   // Camera position
-
+        
+        uniform Light uLights[8];
+        uniform int uNumLights;
+        uniform vec3 uViewPos;
+        uniform sampler2D uTexture; // Texture uniform
+        
         varying vec3 vNormal;
         varying vec3 vFragPos;
-
+        varying vec2 vTexCoord; // Interpolated texture coordinate
+        
         void main() {
             vec3 ambient = vec3(0.0);
             vec3 diffuse = vec3(0.0);
             vec3 specular = vec3(0.0);
-
+        
             vec3 norm = normalize(vNormal);
             vec3 viewDir = normalize(uViewPos - vFragPos);
-
+        
             // Accumulate lighting from all active lights
             for (int i = 0; i < 8; i++) {
                 if (i >= uNumLights) break;
-
-                // Light properties
+        
                 vec3 lightPos = uLights[i].position;
                 vec3 lightAmbient = uLights[i].ambient;
                 vec3 lightDiffuse = uLights[i].diffuse;
                 vec3 lightSpecular = uLights[i].specular;
-
-                // Ambient contribution
+        
                 ambient += lightAmbient;
-
-                // Diffuse contribution
+        
                 vec3 lightDir = normalize(lightPos - vFragPos);
                 float diff = max(dot(norm, lightDir), 0.0);
                 diffuse += diff * lightDiffuse;
-
-                // Specular contribution (Blinn-Phong)
+        
                 vec3 halfwayDir = normalize(lightDir + viewDir);
-                float spec = pow(max(dot(norm, halfwayDir), 0.0), 32.0); // Shininess = 32
+                float spec = pow(max(dot(norm, halfwayDir), 0.0), 32.0);
                 specular += spec * lightSpecular;
             }
-
-            vec3 result = ambient + diffuse + specular;
-            gl_FragColor = vec4(result, 1.0);
+        
+            // Sample the texture
+            vec4 texColor = texture2D(uTexture, vTexCoord);
+        
+            // Combine texture color with lighting
+            vec3 result = texColor.rgb * (ambient + diffuse) + specular;
+            gl_FragColor = vec4(result, texColor.a);
         }
+
     `;
 
     // Create and compile the material
     const material = new Material(gl, vertexShaderSource, fragmentShaderSource);
+    await material.addTexture(textureUrl, 'uTexture'); // Load texture and bind it to 'uTexture'
 
     // Create the entity with the material
     const entity = new Entity(objData, gl, material);
@@ -109,12 +115,10 @@ async function main() {
 
     const gl = engine.renderer.gl;
 
-    // Configure the camera
     const camera = engine.scene.camera;
     camera.position = [0, 2, 10];
     camera.target = [0, 1, 0];
 
-    // Add lights to the scene
     const light1 = new Light("point", [1.0, 0.8, 0.8], 1.0); // Warm light
     light1.position = [5.0, 5.0, 5.0];
     light1.ambient = [0.1, 0.1, 0.1];
@@ -129,26 +133,20 @@ async function main() {
     light2.specular = [0.8, 0.8, 1.0];
     engine.scene.addLight(light2);
 
-    // Create and configure the cube entity
-    const objEntity = await createObjEntity('./assets/cube.obj', gl);
+    const objEntity = await createObjEntityWithTexture('./assets/cube.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
     objEntity.position = [0, 1, -5];
     objEntity.scale = [1, 1, 1];
     objEntity.rotation = [0, Math.PI / 4, 0];
 
-    // Add the entity to the scene
     engine.scene.addEntity(objEntity);
 
-    // Compile materials after adding the entity and lights
     objEntity.material.compile();
 
-    // Set up static uniforms
     objEntity.material.setUniform('uViewPos', camera.position);
 
-    // Log scene data for debugging
     console.log('Entities:', engine.scene.entities);
     console.log('Lights:', engine.scene.lights);
 
-    // Start the engine
     engine.start();
 }
 

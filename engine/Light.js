@@ -11,13 +11,13 @@ export class Light extends Transformable {
      * @param {number} intensity - The intensity of the light (default is 1.0).
      */
     constructor(type = "point", color = [1.0, 1.0, 1.0], intensity = 1.0) {
-        super(); // Position, rotation, scale from Transformable
-        this.type = type; // Light type (e.g., "point", "directional", etc.)
+        super(); // Inherits position, rotation, scale from Transformable
+        this.type = type; // Light type (e.g., "point", "directional", "spotlight")
         this.color = color; // RGB color of the light
         this.intensity = intensity; // Intensity multiplier
-        this.ambient = 0.1; // Default ambient factor
-        this.diffuse = 1.0; // Default diffuse factor
-        this.specular = 1.0; // Default specular factor
+        this.ambient = [0.1, 0.1, 0.1]; // Default ambient factor as [r, g, b]
+        this.diffuse = [1.0, 1.0, 1.0]; // Default diffuse factor as [r, g, b]
+        this.specular = [1.0, 1.0, 1.0]; // Default specular factor as [r, g, b]
     }
 
     /**
@@ -31,7 +31,7 @@ export class Light extends Transformable {
             ambient: this.ambient, // Ambient factor
             diffuse: this.diffuse, // Diffuse factor
             specular: this.specular, // Specular factor
-            type: this.type, // Light type for shader logic
+            type: this.type, // Light type for shader logic (not directly used here)
         };
     }
 
@@ -41,9 +41,9 @@ export class Light extends Transformable {
      */
     update(deltaTime) {
         // Example: animate light intensity over time
-        this.intensity = Math.abs(Math.sin(performance.now() / 1000)); // Oscillate intensity
+        // Uncomment the below line to oscillate intensity for debugging or effects
+        // this.intensity = Math.abs(Math.sin(performance.now() / 1000));
     }
-
 
     /**
      * Updates the light's uniforms in the material.
@@ -53,23 +53,20 @@ export class Light extends Transformable {
     applyToMaterial(material, index = 0) {
         const baseName = `uLights[${index}]`;
 
-        // Log uniform updates
+        // Log uniform updates for debugging
         console.log(`Applying light ${index}:`, {
             position: this.position,
-            color: this.color.map(c => c * this.intensity),
             ambient: this.ambient,
             diffuse: this.diffuse,
             specular: this.specular,
         });
 
-        // Set all uniform data in the material
-        material.setUniform(`${baseName}.position`, this.position);
-        material.setUniform(`${baseName}.color`, this.color.map(c => c * this.intensity));
-        material.setUniform(`${baseName}.ambient`, this.ambient);
-        material.setUniform(`${baseName}.diffuse`, this.diffuse);
-        material.setUniform(`${baseName}.specular`, this.specular);
+        // Set all relevant uniform data in the material
+        material.setUniform(`${baseName}.position`, new Float32Array(this.position));
+        material.setUniform(`${baseName}.ambient`, new Float32Array(this.ambient));
+        material.setUniform(`${baseName}.diffuse`, new Float32Array(this.diffuse));
+        material.setUniform(`${baseName}.specular`, new Float32Array(this.specular));
     }
-
 
     /**
      * Calculates the direction of the light based on its rotation.

@@ -14,6 +14,7 @@ export class Material {
         this.attributeLocations = {}; // Cached attribute locations
         this.uniformLocations = {}; // Cached uniform locations
         this.uniforms = {}; // Dynamic uniform data
+        this.textures = {}; // Texture map for sampler names to WebGL textures
     }
 
     /**
@@ -93,6 +94,55 @@ export class Material {
     }
 
     /**
+     * Adds a texture to the material by loading it from a URL.
+     * @param {string} url - The URL of the texture image.
+     * @param {string} samplerName - The sampler uniform name in the shader (e.g., "uTexture").
+     */
+    async addTexture(url, samplerName) {
+        const gl = this.gl;
+
+        // Create a WebGL texture
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        // Placeholder texture (1x1 pixel until the image loads)
+        const placeholderPixel = new Uint8Array([255, 255, 255, 255]);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, placeholderPixel);
+
+        // Load the texture image
+        const image = new Image();
+        image.src = url;
+
+        await new Promise((resolve, reject) => {
+            image.onload = () => {
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+                // Generate mipmaps
+                gl.generateMipmap(gl.TEXTURE_2D);
+
+                // Set texture parameters
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+                resolve();
+            };
+
+            image.onerror = (err) => {
+                console.error(`Failed to load texture: ${url}`);
+                reject(err);
+            };
+        });
+
+        // Store the texture with the associated sampler name
+        this.textures[samplerName] = texture;
+        console.log('Texture added:', this.textures['uTexture']);
+
+    }
+
+    /**
      * Sets a uniform value to be passed to the shader program.
      * @param {string} name - The name of the uniform.
      * @param {any} value - The value of the uniform.
@@ -103,7 +153,7 @@ export class Material {
     }
 
     /**
-     * Applies all stored uniform values to the shader program.
+     * Applies all stored uniform values and textures to the shader program.
      */
     applyUniforms() {
         const gl = this.gl;
@@ -113,9 +163,8 @@ export class Material {
 
         console.log('Uniforms in applyUniforms:', this.uniforms);
 
+        // Apply uniforms
         Object.entries(this.uniforms).forEach(([name, value]) => {
-            console.log(`Checking uniform: ${name}, value:`, value);
-
             const location = this.uniformLocations[name];
             if (!location) {
                 console.warn(`Uniform location not found for: ${name}`);
@@ -131,6 +180,21 @@ export class Material {
                 gl.uniform1f(location, value);
             }
         });
-    }
 
+        // Apply textures
+        let textureUnit = 0;
+        Object.entries(this.textures).forEach(([samplerName, texture]) => {
+            console.log("Texture entry 1");
+            const location = this.uniformLocations[samplerName];
+            if (!location) {
+                console.warn(`Texture sampler location not found for: ${samplerName}`);
+                return;
+            }
+
+            gl.activeTexture(gl[`TEXTURE${textureUnit}`]);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.uniform1i(location, textureUnit);
+            textureUnit++;
+        });
+    }
 }

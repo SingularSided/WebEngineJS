@@ -57,13 +57,8 @@ class Scene {
      * @param {HTMLCanvasElement} canvas - The canvas used for rendering.
      */
     update(deltaTime, input, canvas) {
-        // Update camera for projection and view matrix calculations
         this.camera.update(canvas);
-
-        // Update entities
         this.entities.forEach(entity => entity.update(deltaTime));
-
-        // Update lights
         this.lights.forEach(light => light.update());
     }
 

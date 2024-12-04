@@ -7,7 +7,7 @@ import { mat4 } from '../node_modules/gl-matrix/esm/index.js';
 export class Entity extends Transformable {
     /**
      * Creates a renderable entity.
-     * @param {Object} objData - The object data containing vertices, indices, and normals.
+     * @param {Object} objData - The object data containing vertices, indices, normals, and texture coordinates.
      * @param {WebGLRenderingContext} gl - The WebGL context for buffer operations.
      * @param {Material} material - The material associated with this entity.
      */
@@ -16,18 +16,22 @@ export class Entity extends Transformable {
         this.vertices = objData.vertices;
         this.indices = objData.indices;
         this.normals = objData.normals;
+        this.texCoords = objData.texCoords || []; // **Added:** Handle texture coordinates.
 
         console.log("Entity Vertices:", this.vertices);
         console.log("Entity Indices:", this.indices);
         console.log("Entity Normals:", this.normals);
+        console.log("Entity Texture Coordinates:", this.texCoords);
 
-        this.material = material; // Material defines the shader and uniforms
+        this.material = material;
 
+        // Buffers for vertex attributes
         this.vertexBuffer = gl.createBuffer();
         this.indexBuffer = gl.createBuffer();
         this.normalBuffer = gl.createBuffer();
+        this.texCoordBuffer = null;
 
-        this.modelMatrix = mat4.create(); // Initialize model matrix
+        this.modelMatrix = mat4.create();
 
         // Upload vertex data
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -40,6 +44,13 @@ export class Entity extends Transformable {
         // Upload index data
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), gl.STATIC_DRAW);
+
+        // **Added:** Handle texture coordinates
+        if (this.texCoords.length > 0) {
+            this.texCoordBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
+        }
     }
 
     /**
@@ -70,7 +81,6 @@ export class Entity extends Transformable {
         const material = this.material;
         const shaderProgram = material.shaderProgram;
 
-        // Use the material's shader program
         gl.useProgram(shaderProgram);
 
         // Bind vertex buffer and set up position attribute
@@ -81,7 +91,7 @@ export class Entity extends Transformable {
             gl.enableVertexAttribArray(positionLoc);
         }
 
-        // Bind normal buffer and set up normal attribute (if present)
+        // Bind normal buffer and set up normal attribute
         const normalLoc = material.attributeLocations['aNormal'];
         if (normalLoc !== undefined) {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
@@ -89,26 +99,33 @@ export class Entity extends Transformable {
             gl.enableVertexAttribArray(normalLoc);
         }
 
+        // **Added:** Bind texture coordinates buffer and set up texture attribute
+        const texCoordLoc = material.attributeLocations['aTexCoord'];
+        if (texCoordLoc !== undefined && this.texCoordBuffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+            gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(texCoordLoc);
+        }
+
         // Bind index buffer
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
-        // Pass the model matrix to the shader
+        // Set uniforms for the model matrix
         const uModelMatrixLoc = material.uniformLocations['uModelMatrix'];
         if (uModelMatrixLoc) {
             gl.uniformMatrix4fv(uModelMatrixLoc, false, this.modelMatrix);
         }
 
-        // Pass the view and projection matrices from the camera
+        // Pass view and projection matrices to the material
         material.setUniform('uViewMatrix', camera.getViewMatrix());
         material.setUniform('uProjectionMatrix', camera.getProjectionMatrix());
 
-        // Apply lighting to the material
+        // Apply lights to the material
         scene.applyLightsToMaterial(material);
 
-        // Apply material uniforms
+        // Apply material uniforms (e.g., texture samplers, lighting data)
         material.applyUniforms();
 
-        // Debugging output for drawing
         console.log("Drawing entity with:");
         console.log("Model Matrix:", this.modelMatrix);
         console.log("View Matrix:", camera.getViewMatrix());

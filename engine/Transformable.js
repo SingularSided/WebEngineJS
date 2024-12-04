@@ -10,7 +10,6 @@ export class Transformable {
     getModelMatrix() {
         const modelMatrix = mat4.create();
 
-        // Apply transformations: Scale -> Rotate -> Translate
         mat4.translate(modelMatrix, modelMatrix, this.position);
         mat4.rotateX(modelMatrix, modelMatrix, this.rotation[0]);
         mat4.rotateY(modelMatrix, modelMatrix, this.rotation[1]);

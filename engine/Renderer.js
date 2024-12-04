@@ -16,16 +16,12 @@ export class Renderer {
     render(scene) {
         const gl = this.gl;
 
-        // Clear the screen
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // Get the active camera
         const camera = scene.camera;
 
-        // Get light data from the scene
         const lights = scene.getLightData();
 
-        // Render all entities
         scene.entities.forEach(entity => {
             const material = entity.material;
 
@@ -34,11 +30,9 @@ export class Renderer {
                 return;
             }
 
-            // Use the material's shader program
             const shaderProgram = material.shaderProgram;
             gl.useProgram(shaderProgram);
 
-            // Pass camera matrices
             const uViewMatrixLoc = material.uniformLocations['uViewMatrix'];
             const uProjectionMatrixLoc = material.uniformLocations['uProjectionMatrix'];
 
@@ -49,7 +43,6 @@ export class Renderer {
                 gl.uniformMatrix4fv(uProjectionMatrixLoc, false, camera.getProjectionMatrix());
             }
 
-            // Pass light data to the shader
             lights.forEach((light, index) => {
                 const lightBase = `uLights[${index}]`;
 
@@ -76,17 +69,14 @@ export class Renderer {
                 }
             });
 
-            // Pass number of active lights
             const uNumLightsLoc = material.uniformLocations['uNumLights'];
             if (uNumLightsLoc) {
                 console.log(`Setting uNumLights:`, lights.length);
                 gl.uniform1i(uNumLightsLoc, lights.length);
             }
 
-            // Apply material-specific uniforms
             material.applyUniforms();
 
-            // Draw the entity
             entity.draw(gl, camera, scene);
         });
     }
