@@ -1,6 +1,7 @@
 import { Input } from "./Input.js";
 import { Renderer } from "./Renderer.js";
 import Scene from "./Scene.js";
+import Event from "./Event.js";
 
 export class Engine {
     constructor(canvasId = 'myWebGLCanvas') {
@@ -8,6 +9,7 @@ export class Engine {
         this.input = new Input();
         this.scene = new Scene();
         this.lastTime = 0; // Time tracking for delta time
+        this.OnUpdate = new Event();
     }
 
     init() {
@@ -16,6 +18,7 @@ export class Engine {
     }
 
     update(deltaTime) {
+        this.OnUpdate.Fire(deltaTime);
         this.scene.update(deltaTime, this.input, this.renderer.gl.canvas);
     }
 
@@ -30,7 +33,7 @@ export class Engine {
         this.update(deltaTime);
         this.render();
 
-        //requestAnimationFrame(this.gameLoop.bind(this));
+        requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     start() {

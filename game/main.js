@@ -133,7 +133,7 @@ async function main() {
     light2.specular = [0.8, 0.8, 1.0];
     engine.scene.addLight(light2);
 
-    const objEntity = await createObjEntityWithTexture('./assets/cube.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
+    const objEntity = await createObjEntityWithTexture('./assets/cube.obj', './assets/Textures/RockyWalls_BaseColorWall_1Final.png', gl);
     objEntity.position = [0, 1, -5];
     objEntity.scale = [1, 1, 1];
     objEntity.rotation = [0, Math.PI / 4, 0];
