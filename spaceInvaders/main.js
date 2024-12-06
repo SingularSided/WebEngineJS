@@ -4,6 +4,7 @@ import { Entity } from '../engine/Entity.js';
 import { Material } from '../engine/Material.js';
 import { Light } from '../engine/Light.js';
 import {Player} from "../engine/Player.js";
+import {Enemy} from "../engine/Enemy.js";
 
 const vertexShaderSource =
 `
@@ -88,7 +89,6 @@ const fragmentShaderSource =
 
 `;
 
-
 /**
  * Creates an entity with a Blinn-Phong material and a texture applied.
  * @param {string} objUrl - The URL to the OBJ file.
@@ -109,6 +109,28 @@ async function createObjEntityWithTexture(objUrl, textureUrl, gl) {
     const entity = new Entity(objData, gl, material);
 
     return entity;
+}
+
+/**
+ * Creates an enemy with a Blinn-Phong material and a texture applied.
+ * @param {string} objUrl - The URL to the OBJ file for the enemy model.
+ * @param {string} textureUrl - The URL to the texture image for the enemy.
+ * @param {WebGLRenderingContext} gl - The WebGL context.
+ * @returns {Enemy} - The configured enemy entity.
+ */
+async function createEnemy(objUrl, textureUrl, gl) {
+    const response = await fetch(objUrl);
+    const objData = ObjLoader.parse(await response.text());
+
+    // Create and compile the material
+    const material = new Material(gl, vertexShaderSource, fragmentShaderSource);
+    await material.addTexture(textureUrl, 'uTexture'); // Load texture and bind it to 'uTexture'
+
+    const enemy = new Enemy(objData, gl, material);
+
+    enemy.material.compile();
+
+    return enemy;
 }
 
 /**
@@ -135,23 +157,58 @@ async function createPlayer(objUrl, textureUrl, gl) {
     player.position = [0, 0, -5]; // Initial position
     player.scale = [1, 1, 1]; // Scale
 
-    // // Extend player controls
-    // player.handleInput = (deltaTime) => {
-    //     const speed = 5 * deltaTime; // Movement speed
-    //     if (input.isKeyPressed('ArrowLeft')) {
-    //         player.position[0] -= speed;
-    //     }
-    //     if (input.isKeyPressed('ArrowRight')) {
-    //         player.position[0] += speed;
-    //     }
-    //
-    //     // Clamp movement within screen bounds (adjust as necessary)
-    //     const minX = -5;
-    //     const maxX = 5;
-    //     player.position[0] = Math.max(minX, Math.min(maxX, player.position[0]));
-    // };
-
     return player;
+}
+
+async function addEnemies(engine) {
+    const gl = engine.renderer.gl;
+
+    // Create a grid of enemies
+    const enemies = [];
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 4; j++) {
+            const enemy = await createEnemy('./assets/spaceship8.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
+            enemy.position = [-3 + j * 2, 2 - i * 1.5, -25]; // Grid layout
+            enemy.scale = [0.1, 0.1, 0.1];
+            enemies.push(enemy);
+            engine.scene.addEntity(enemy);
+        }
+    }
+
+    return enemies;
+}
+
+let descendingEnemies = []; // Track descending enemies
+
+function updateEnemies(deltaTime, enemies, player) {
+    enemies.forEach((enemy) => {
+        // Check if any enemies should start descending
+        if (!enemy.isDescending && Math.random() < 0.005) {
+            enemy.isDescending = true;
+            descendingEnemies.push(enemy);
+        }
+
+        // Update enemy logic
+        enemy.update(deltaTime);
+    });
+
+    // Handle collisions (simplified logic here)
+    descendingEnemies.forEach((enemy) => {
+        if (checkCollision(player, enemy)) {
+            console.log('Collision! Game Over!');
+            // Implement game-over logic here
+        }
+    });
+}
+
+function checkCollision(entity1, entity2) {
+    const distance = Math.sqrt(
+        Math.pow(entity1.position[0] - entity2.position[0], 2) +
+        Math.pow(entity1.position[1] - entity2.position[1], 2) +
+        Math.pow(entity1.position[2] - entity2.position[2], 2)
+    );
+
+    return distance < 1.0; // Example collision radius
 }
 
 
@@ -206,8 +263,11 @@ async function main() {
 
     player.material.setUniform('uViewPos', camera.position);
 
+    const enemies = await addEnemies(engine);
+
     engine.OnUpdate.Connect((deltaTime) => {
         player.handleInput(engine.input, deltaTime);
+        updateEnemies(deltaTime, enemies, player);
     });
 
     engine.start();

@@ -17,6 +17,7 @@ export class Enemy extends Entity {
         this.marchSpeed = 2; // Horizontal movement speed
         this.descendSpeed = 2; // Descending speed
         this.cycleTime = 0; // Timer for cycling appearance
+        this.targetPosition = [];
     }
 
     /**
@@ -25,34 +26,64 @@ export class Enemy extends Entity {
      */
     update(deltaTime) {
         if (!this.isDescending) {
-            // March left and right
-            this.position[0] += this.direction * this.marchSpeed * deltaTime;
+            // Move towards the target position
+            const directionX = this.targetPosition[0] - this.position[0];
+            const stepX = Math.sign(directionX) * this.marchSpeed * deltaTime;
 
-            // Reverse direction if boundaries are reached
-            if (this.position[0] > 4 || this.position[0] < -4) {
-                this.direction *= -1;
+            if (Math.abs(directionX) <= Math.abs(stepX)) {
+                // Target reached; switch to the opposite side
+                this.position[0] = this.targetPosition[0];
+                this.targetPosition[0] = this.targetPosition[0] === 4 ? -4 : 4;
+            } else {
+                // Move closer to the target
+                this.position[0] += stepX;
             }
         } else {
-            // Descend in a sinusoidal pattern
-            this.position[0] += Math.sin(this.position[1]) * this.sinusoidalAmplitude;
+            // Descend steadily
             this.position[1] -= this.descendSpeed * deltaTime;
+
+            // Reset when descending enemy goes off-screen
+            if (this.position[1] < -5) {
+                this.resetPosition();
+            }
         }
 
         // Cycle appearance every 0.5 seconds
         this.cycleTime += deltaTime;
         if (this.cycleTime >= 0.5) {
-            this.cycleAppearance();
+            this.cycleAppearance(); // Change appearance logic
             this.cycleTime = 0;
         }
 
-        this.updateModelMatrix();
+        // Update the model matrix to reflect new position
+        super.update(deltaTime);
     }
+
+    /**
+     * Resets the enemy's position and state when it descends off-screen.
+     */
+    resetPosition() {
+        this.isDescending = false; // Stop descending
+        this.position[1] = 2; // Reset Y position
+        this.position[0] = Math.random() * 8 - 4; // Randomize X position
+        this.targetPosition[0] = this.position[0] > 0 ? -4 : 4; // Reset target to the opposite direction
+    }
+
+    /**
+     * Initializes the enemy's marching logic.
+     */
+    initializeMarch() {
+        this.targetPosition = [this.position[0] > 0 ? -4 : 4, this.position[1], this.position[2]];
+    }
+
+
+
 
     /**
      * Changes the enemy's appearance (e.g., color or scale).
      */
     cycleAppearance() {
-        this.scale[0] = this.scale[0] === 1 ? 0.9 : 1; // Example: toggle scale slightly
+        //this.scale[0] = this.scale[0] === 1 ? 0.9 : 1; // Example: toggle scale slightly
         this.material.setUniform('uColor', [Math.random(), Math.random(), Math.random(), 1.0]); // Change color
     }
 }
