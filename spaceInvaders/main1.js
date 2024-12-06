@@ -6,6 +6,7 @@ import { createPlayer, createEnemy, createBullet } from '../engine/Factory.js';
 
 const engine = new Engine("webgl-canvas");
 
+
 async function endGame() {
     setTimeout(() => {
         alert('Game Over!');
@@ -180,6 +181,9 @@ async function main() {
  * @returns {boolean} - Whether the two entities are colliding.
  */
 function checkCollision(entity1, entity2) {
+    if(!engine.isRunning) {
+        return false;
+    }
     if (!entity1 || !entity2 || entity1 === entity2) return false; // Avoid self-collision
 
     const distance = Math.sqrt(

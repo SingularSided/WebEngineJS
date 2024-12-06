@@ -64,7 +64,7 @@ async function main() {
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 4; j++) {
             const enemy = await createEnemy('./assets/spaceship5.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
-
+            enemy.canDescend = true;
             // Set initial position in a grid
             enemy.position = [-3 + j * 2, 0, 2 - i * 1.5 - 15];
             enemy.originalPosition = [...enemy.position];
@@ -128,7 +128,7 @@ async function main() {
                 // Skip destruction if the enemy is in the ignore list
                 return;
             }
-            console.log('Bullet hit enemy!');
+            console.log('Bullet hit enemy! 1');
             engine.scene.removeEntity(enemy);
             engine.scene.removeEntity(bullet);
             enemy.destroy(engine.scene);
@@ -136,7 +136,7 @@ async function main() {
         });
 
         bulletManager.checkCollisions([player], engine.scene, (bullet, player) => {
-            console.log('Bullet hit enemy!');
+            console.log('Bullet hit enemy! 2');
             engine.scene.removeEntity(player);
             bullet.destroy(engine.scene);
 
