@@ -124,7 +124,7 @@ export async function createEnemy(objUrl, textureUrl, gl) {
 export async function createBullet(position, direction, speed, ignoreList, gl) {
     const objData = ObjLoader.parse(await fetch('./assets/cube.obj').then(res => res.text()));
     const material = new Material(gl, vertexShaderSource, fragmentShaderSource);
-    await material.addTexture('./assets/Textures/abe.png', 'uTexture');
+    await material.addTexture('./assets/Textures/RockyWalls_BaseColorWall_1Final.png', 'uTexture');
     material.compile();
 
     const bullet = new Bullet(objData, gl, material, direction, speed, ignoreList);

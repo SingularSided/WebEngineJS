@@ -18,10 +18,7 @@ export class Entity extends Transformable {
         this.normals = objData.normals;
         this.texCoords = objData.texCoords || []; // **Added:** Handle texture coordinates.
 
-        console.log("Entity Vertices:", this.vertices);
-        console.log("Entity Indices:", this.indices);
-        console.log("Entity Normals:", this.normals);
-        console.log("Entity Texture Coordinates:", this.texCoords);
+
 
         this.material = material;
 
@@ -126,11 +123,7 @@ export class Entity extends Transformable {
         // Apply material uniforms (e.g., texture samplers, lighting data)
         material.applyUniforms();
 
-        console.log("Drawing entity with:");
-        console.log("Model Matrix:", this.modelMatrix);
-        console.log("View Matrix:", camera.getViewMatrix());
-        console.log("Projection Matrix:", camera.getProjectionMatrix());
-        console.log("Number of indices:", this.indices.length);
+
 
         // Draw the entity
         gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);

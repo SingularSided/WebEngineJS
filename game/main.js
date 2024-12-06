@@ -144,8 +144,6 @@ async function main() {
 
     objEntity.material.setUniform('uViewPos', camera.position);
 
-    console.log('Entities:', engine.scene.entities);
-    console.log('Lights:', engine.scene.lights);
 
     engine.start();
 }

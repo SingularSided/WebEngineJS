@@ -1,4 +1,4 @@
-import { Bullet } from './Bullet.js';
+import { createBullet } from './Factory.js';
 
 export class BulletManager {
     constructor() {
@@ -12,29 +12,11 @@ export class BulletManager {
      * @param {number} speed - Speed of the bullet.
      * @param {Array<Entity>} ignoreList - Entities the bullet should ignore collisions with.
      * @param {WebGLRenderingContext} gl - The WebGL context.
-     * @returns {Bullet} - The newly created bullet.
+     * @returns {Promise<Bullet>} - The newly created bullet.
      */
-    createBullet(position, direction, speed, ignoreList, gl) {
-        const material = this.createBulletMaterial(gl);
-        const bulletData = {
-            vertices: [
-                -0.05, -0.05, 0,
-                0.05, -0.05, 0,
-                0.05, 0.05, 0,
-                -0.05, 0.05, 0
-            ],
-            indices: [0, 1, 2, 2, 3, 0],
-            normals: [],
-            texCoords: []
-        };
-
-        const bullet = new Bullet(bulletData, gl, material);
-        bullet.position = [...position];
-        bullet.direction = [...direction];
-        bullet.speed = speed;
-        bullet.ignoreList = ignoreList;
+    async getBullet(position, direction, speed, ignoreList, gl) {
+        const bullet = await createBullet(position, direction, speed, ignoreList, gl);
         this.bullets.push(bullet);
-
         return bullet;
     }
 
@@ -48,7 +30,10 @@ export class BulletManager {
 
         // Remove bullets that are destroyed or out of bounds
         this.bullets = this.bullets.filter((bullet) => {
-            const outOfBounds = Math.abs(bullet.position[0]) > 50 || Math.abs(bullet.position[1]) > 50 || Math.abs(bullet.position[2]) > 50;
+            const outOfBounds =
+                Math.abs(bullet.position[0]) > 50 ||
+                Math.abs(bullet.position[1]) > 50 ||
+                Math.abs(bullet.position[2]) > 50;
             if (bullet.isDestroyed || outOfBounds) {
                 scene.removeEntity(bullet);
                 bullet.destroy(scene);
@@ -82,33 +67,5 @@ export class BulletManager {
                 }
             });
         });
-    }
-
-    /**
-     * Creates a material for the bullet.
-     * @param {WebGLRenderingContext} gl - The WebGL context.
-     * @returns {Material} - The bullet material.
-     */
-    createBulletMaterial(gl) {
-        const vertexShaderSource = `
-            attribute vec3 aPosition;
-            uniform mat4 uModelMatrix;
-            uniform mat4 uViewMatrix;
-            uniform mat4 uProjectionMatrix;
-
-            void main() {
-                gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aPosition, 1.0);
-            }
-        `;
-
-        const fragmentShaderSource = `
-            precision mediump float;
-            void main() {
-                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red bullet color
-            }
-        `;
-
-        const material = new Material(gl, vertexShaderSource, fragmentShaderSource);
-        return material;
     }
 }

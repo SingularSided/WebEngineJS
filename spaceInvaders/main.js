@@ -4,6 +4,16 @@ import { Enemy } from '../engine/Enemy.js';
 import { BulletManager } from '../engine/BulletManager.js';
 import { createPlayer, createEnemy, createBullet } from '../engine/Factory.js';
 
+async function shootBullet(player, bulletManager, engine, gl) {
+    const bulletPosition = [...player.position];
+    bulletPosition[1] += 0.5; // Slightly above the player
+    const bulletDirection = [0, 0, -1];
+
+    const bullet = await bulletManager.getBullet(bulletPosition, bulletDirection, 10, [player], gl);
+    engine.scene.addEntity(bullet);
+}
+
+
 /**
  * Main function to initialize the engine and render the scene.
  */
@@ -60,19 +70,10 @@ async function main() {
         // Handle player input
         player.handleInput(engine.input, deltaTime);
 
-        // Shoot a bullet on spacebar press
-        if (engine.input.isKeyPressed(' ')) {
-            const bullet = bulletManager.createBullet(
-                [...player.position],
-                [0, 0, -1], // Shooting straight ahead
-                10,         // Speed
-                [player],   // Ignore collisions with the player
-                gl
-            );
-            engine.scene.addEntity(bullet);
+        if (engine.input.isKeyPressed('Space')) {
+            shootBullet(player, bulletManager, engine, gl);
         }
 
-        // Update bullets
         bulletManager.update(deltaTime, engine.scene);
 
         // Update enemies
@@ -102,9 +103,20 @@ async function main() {
                 }, 100); // Delay the alert slightly for better rendering
             }
         });
+
+
     });
 
     engine.start();
+
+    // window.addEventListener("keydown", (event) => {
+    //     if (event.code === "Space") {
+    //         const bulletPosition = [...player.position];
+    //         bulletPosition[1] += 0.5; // Above player
+    //         const bulletDirection = [0, 0, -1];
+    //         engine.scene.addEntity(bulletManager.createBullet(bulletPosition, bulletDirection, player));
+    //     }
+    // });
 }
 
 /**

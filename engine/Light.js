@@ -53,14 +53,6 @@ export class Light extends Transformable {
     applyToMaterial(material, index = 0) {
         const baseName = `uLights[${index}]`;
 
-        // Log uniform updates for debugging
-        console.log(`Applying light ${index}:`, {
-            position: this.position,
-            ambient: this.ambient,
-            diffuse: this.diffuse,
-            specular: this.specular,
-        });
-
         // Set all relevant uniform data in the material
         material.setUniform(`${baseName}.position`, new Float32Array(this.position));
         material.setUniform(`${baseName}.ambient`, new Float32Array(this.ambient));

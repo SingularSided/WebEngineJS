@@ -86,11 +86,9 @@ export class Material {
             const uniformInfo = gl.getActiveUniform(this.shaderProgram, i);
             if (!uniformInfo) continue;
 
-            console.log(`Found Uniform: ${uniformInfo.name}`);
             this.uniformLocations[uniformInfo.name] = gl.getUniformLocation(this.shaderProgram, uniformInfo.name);
         }
 
-        console.log('Cached Uniform Locations:', this.uniformLocations);
     }
 
     /**
@@ -148,7 +146,6 @@ export class Material {
      * @param {any} value - The value of the uniform.
      */
     setUniform(name, value) {
-        console.log(`Setting uniform: ${name} =`, value);
         this.uniforms[name] = value;
     }
 
@@ -161,7 +158,6 @@ export class Material {
         // Use this material's shader program
         gl.useProgram(this.shaderProgram);
 
-        console.log('Uniforms in applyUniforms:', this.uniforms);
 
         // Apply uniforms
         Object.entries(this.uniforms).forEach(([name, value]) => {
@@ -171,7 +167,6 @@ export class Material {
                 return;
             }
 
-            console.log(`Sending uniform: ${name}, value: ${value}`);
             if (Array.isArray(value)) {
                 if (value.length === 4) gl.uniform4fv(location, value);
                 else if (value.length === 3) gl.uniform3fv(location, value);
@@ -184,7 +179,6 @@ export class Material {
         // Apply textures
         let textureUnit = 0;
         Object.entries(this.textures).forEach(([samplerName, texture]) => {
-            console.log("Texture entry 1");
             const location = this.uniformLocations[samplerName];
             if (!location) {
                 console.warn(`Texture sampler location not found for: ${samplerName}`);
