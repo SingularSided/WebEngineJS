@@ -27,7 +27,7 @@ export class Engine {
     }
 
     gameLoop(timestamp) {
-        const deltaTime = (timestamp - this.lastTime) / 1000;
+        const deltaTime = Math.min((timestamp - this.lastTime) / 1000, 1/30);
         this.lastTime = timestamp;
 
         this.update(deltaTime);

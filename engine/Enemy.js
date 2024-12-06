@@ -2,70 +2,103 @@ import { Entity } from "./Entity.js";
 
 export class Enemy extends Entity {
     static direction = 1; // Shared horizontal direction (1 for right, -1 for left)
-    static gridBounds = 4; // Maximum X bounds for horizontal movement
     static descending = false; // Whether all enemies are descending
     static descentRowOffset = 1.5; // Z-axis offset for each descent row
     static currentRow = 0; // Tracks the current descent row for all enemies
+    static descentCooldown = 3.0; // Initial cooldown to delay the first descent
+    static descentInterval = 1.0; // Minimum time (in seconds) between descents
 
     constructor(objData, gl, material) {
         super(objData, gl, material);
 
         this.marchSpeed = 0.6; // Speed for marching
+        this.marchBounds = this.randomizeBounds(); // Initialize random march bounds
         this.originalPosition = [0, 0, 0]; // Stores the original position in the grid
         this.cycleTime = 0; // Timer for cycling appearance
+    }
+
+    /**
+     * Randomizes the horizontal movement bounds for the enemy.
+     * @returns {number} - A random value between 3 and 5.
+     */
+    randomizeBounds() {
+        return Math.random() * 2 + 3; // Random bounds between 3 and 5
     }
 
     /**
      * Updates the enemy's position and appearance.
      * @param {number} deltaTime - Time elapsed since the last update.
      */
-    update(deltaTime) {
-        if (!Enemy.descending) {
-            // Marching logic: All enemies move left or right
-            this.position[0] += Enemy.direction * this.marchSpeed * deltaTime;
+    static groupUpdate(deltaTime, enemies) {
+        // Handle cooldown timer for descent
+        if (Enemy.descentCooldown > 0) {
+            Enemy.descentCooldown -= deltaTime;
+        }
 
-            // Reverse direction and trigger descent if hitting bounds
-            if (this.position[0] > Enemy.gridBounds || this.position[0] < -Enemy.gridBounds) {
-                Enemy.direction *= -1; // Reverse direction
-                Enemy.descending = true; // Trigger descent for all
+        // Check if a descent should start
+        if (!Enemy.descending && Enemy.descentCooldown <= 0) {
+            Enemy.descending = true; // Trigger descent
+            Enemy.descentCooldown = Math.random() * 2 + Enemy.descentInterval; // Randomize next descent interval
+        }
+
+        // Handle descent logic
+        if (Enemy.descending) {
+            const targetZ = Enemy.currentRow * Enemy.descentRowOffset;
+
+            let allAligned = true;
+            for (const enemy of enemies) {
+                // Ensure grid alignment for descent
+                const targetPosZ = enemy.originalPosition[2] + targetZ;
+                enemy.position[2] += (targetPosZ - enemy.position[2]) * 0.1;
+
+                // Check if this enemy is aligned with the target row
+                if (Math.abs(enemy.position[2] - targetPosZ) > 0.01) {
+                    allAligned = false;
+                }
+            }
+
+            // If all enemies are aligned, stop the descent
+            if (allAligned) {
+                Enemy.descending = false;
+                Enemy.currentRow++; // Move to the next row for future descents
             }
         } else {
-            // Descending logic: Move down a single row along the Z-axis
-            const targetZ = this.originalPosition[2] + Enemy.descentRowOffset * Enemy.currentRow;
-            this.position[2] += (targetZ - this.position[2]) * 0.1;
+            // Handle marching logic
+            for (const enemy of enemies) {
+                enemy.position[0] += Enemy.direction * enemy.marchSpeed * deltaTime;
 
-            // Snap to the row position when close enough
-            if (Math.abs(this.position[2] - targetZ) < 0.01) {
-                this.position[2] = targetZ; // Align to the row
+                // Reverse direction if bounds are exceeded
+                if (
+                    enemy.position[0] > enemy.marchBounds ||
+                    enemy.position[0] < -enemy.marchBounds
+                ) {
+                    Enemy.direction *= -1; // Reverse direction
+                }
             }
         }
 
-        // Check if all enemies have finished descending
-        if (Enemy.descending && Math.abs(this.position[2] - (this.originalPosition[2] + Enemy.descentRowOffset * Enemy.currentRow)) < 0.01) {
-            Enemy.descending = false; // Stop descending once all enemies reach the same row
-            Enemy.currentRow++; // Move to the next row for future descents
-        }
+        // Cycle appearance for all enemies
+        for (const enemy of enemies) {
+            enemy.cycleTime += deltaTime;
+            if (enemy.cycleTime >= 0.5) {
+                enemy.cycleAppearance();
+                enemy.cycleTime = 0;
+            }
 
-        // Cycle appearance every 0.5 seconds
-        this.cycleTime += deltaTime;
-        if (this.cycleTime >= 0.5) {
-            this.cycleAppearance();
-            this.cycleTime = 0;
+            // Update model matrix for rendering
+            enemy.update(deltaTime);
         }
-
-        // Update the model matrix to reflect the new position
-        super.update(deltaTime);
     }
 
     /**
      * Changes the enemy's appearance (e.g., color or scale).
      */
     cycleAppearance() {
-        this.material.setUniform('uColor', [Math.random(), Math.random(), Math.random(), 1.0]); // Change color
+        this.material.setUniform("uColor", [Math.random(), Math.random(), Math.random(), 1.0]); // Change color
     }
 
     destroy(scene) {
         super.destroy(scene); // Call the base class destroy method
-        console.log('Enemy destroyed!');
+        console.log("Enemy destroyed!");
     }
 }
