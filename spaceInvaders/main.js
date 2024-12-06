@@ -160,16 +160,21 @@ async function createPlayer(objUrl, textureUrl, gl) {
     return player;
 }
 
-async function addEnemies(engine) {
+async function addEnemies(engine, player) {
     const gl = engine.renderer.gl;
 
-    // Create a grid of enemies
     const enemies = [];
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 4; j++) {
             const enemy = await createEnemy('./assets/spaceship8.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
             enemy.position = [-3 + j * 2, 2 - i * 1.5, -25]; // Grid layout
             enemy.scale = [0.1, 0.1, 0.1];
+
+            // Optional: Make the enemy target the player
+            if (Math.random() < 0.5) { // 50% chance to target player
+                enemy.targetPlayer = player;
+            }
+
             enemies.push(enemy);
             engine.scene.addEntity(enemy);
         }
@@ -177,7 +182,6 @@ async function addEnemies(engine) {
 
     return enemies;
 }
-
 let descendingEnemies = []; // Track descending enemies
 
 function updateEnemies(deltaTime, enemies, player) {
@@ -263,7 +267,7 @@ async function main() {
 
     player.material.setUniform('uViewPos', camera.position);
 
-    const enemies = await addEnemies(engine);
+    const enemies = await addEnemies(engine, player);
 
     engine.OnUpdate.Connect((deltaTime) => {
         player.handleInput(engine.input, deltaTime);
