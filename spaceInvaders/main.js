@@ -226,8 +226,18 @@ async function main() {
     const gl = engine.renderer.gl;
 
     const camera = engine.scene.camera;
-    camera.position = [0, 2, 10];
-    camera.target = [0, 1, 0];
+// Set camera position (e.g., above and behind the player)
+    camera.position = [0, 20, -10];
+
+// Set the direction the camera looks at (e.g., towards the origin)
+    camera.lookAt = [0, -1, 0]; // Look downward at a slight angle
+
+// Ensure the up direction remains consistent
+    camera.up = [0, 0, -1]; // Y-axis is up
+
+// Update camera matrices
+    camera.update(engine.renderer.gl.canvas);
+
 
     const light1 = new Light("point", [1.0, 0.8, 0.8], 1.0); // Warm light
     light1.position = [5.0, 5.0, 5.0];
