@@ -1,73 +1,49 @@
 import { Entity } from "./Entity.js";
 
 export class Enemy extends Entity {
-    static marchDirection = 1; // Shared direction of movement (1 for right, -1 for left)
-    static timeSinceDirectionChange = 0; // Shared time counter for direction changes
+    static direction = 1; // Shared horizontal direction (1 for right, -1 for left)
+    static gridBounds = 4; // Maximum X bounds for horizontal movement
+    static descending = false; // Whether all enemies are descending
+    static descentRowOffset = 1.5; // Z-axis offset for each descent row
+    static currentRow = 0; // Tracks the current descent row for all enemies
 
-    /**
-     * Creates an enemy entity based on a 3D model.
-     * @param {Object} objData - The loaded OBJ data for the enemy model.
-     * @param {WebGLRenderingContext} gl - The WebGL context.
-     * @param {Material} material - The material to apply to the enemy.
-     */
     constructor(objData, gl, material) {
         super(objData, gl, material);
 
-        this.isAttacking = false; // Whether the enemy is attacking the player
-        this.attackSpeed = 4; // Speed when attacking
-        this.returnSpeed = 2; // Speed when returning to the grid
-        this.marchSpeed = 2; // Speed of grid movement
-        this.gridBounds = 4; // Horizontal bounds for grid movement
+        this.marchSpeed = 0.6; // Speed for marching
+        this.originalPosition = [0, 0, 0]; // Stores the original position in the grid
         this.cycleTime = 0; // Timer for cycling appearance
-        this.originalPosition = [...this.position]; // Store the initial grid position
-        this.targetPlayer = null; // Optional: Target player for attack
     }
 
     /**
-     * Updates the enemy's position and behavior.
+     * Updates the enemy's position and appearance.
      * @param {number} deltaTime - Time elapsed since the last update.
      */
     update(deltaTime) {
-        if (!this.isAttacking) {
-            // Update shared direction change timer
-            Enemy.timeSinceDirectionChange += deltaTime;
+        if (!Enemy.descending) {
+            // Marching logic: All enemies move left or right
+            this.position[0] += Enemy.direction * this.marchSpeed * deltaTime;
 
-            // Change direction for all enemies when bounds are hit or after a fixed interval
-            if (
-                this.originalPosition[0] + Enemy.marchDirection * this.marchSpeed * deltaTime > this.gridBounds ||
-                this.originalPosition[0] + Enemy.marchDirection * this.marchSpeed * deltaTime < -this.gridBounds
-            ) {
-                Enemy.marchDirection *= -1; // Reverse direction
-                Enemy.timeSinceDirectionChange = 0; // Reset the shared timer
-            }
-
-            // Apply grid movement
-            this.originalPosition[0] += Enemy.marchDirection * this.marchSpeed * deltaTime;
-            this.position[0] = this.originalPosition[0];
-            this.position[1] = this.originalPosition[1];
-
-            // Occasionally initiate an attack
-            if (Math.random() < 0.001 && this.targetPlayer) {
-                this.isAttacking = true;
+            // Reverse direction and trigger descent if hitting bounds
+            if (this.position[0] > Enemy.gridBounds || this.position[0] < -Enemy.gridBounds) {
+                Enemy.direction *= -1; // Reverse direction
+                Enemy.descending = true; // Trigger descent for all
             }
         } else {
-            // Attack the player
-            const direction = [
-                this.targetPlayer.position[0] - this.position[0],
-                this.targetPlayer.position[1] - this.position[1],
-                this.targetPlayer.position[2] - this.position[2],
-            ];
-            const distance = Math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2);
+            // Descending logic: Move down a single row along the Z-axis
+            const targetZ = this.originalPosition[2] + Enemy.descentRowOffset * Enemy.currentRow;
+            this.position[2] += (targetZ - this.position[2]) * 0.1;
 
-            if (distance > 0.1) {
-                const normalizedDirection = direction.map((d) => d / distance);
-                this.position = this.position.map(
-                    (p, i) => p + normalizedDirection[i] * this.attackSpeed * deltaTime
-                );
-            } else {
-                // Return to the grid after reaching the player
-                this.isAttacking = false;
+            // Snap to the row position when close enough
+            if (Math.abs(this.position[2] - targetZ) < 0.01) {
+                this.position[2] = targetZ; // Align to the row
             }
+        }
+
+        // Check if all enemies have finished descending
+        if (Enemy.descending && Math.abs(this.position[2] - (this.originalPosition[2] + Enemy.descentRowOffset * Enemy.currentRow)) < 0.01) {
+            Enemy.descending = false; // Stop descending once all enemies reach the same row
+            Enemy.currentRow++; // Move to the next row for future descents
         }
 
         // Cycle appearance every 0.5 seconds
