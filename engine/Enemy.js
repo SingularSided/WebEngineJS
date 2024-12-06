@@ -1,4 +1,5 @@
 import { Entity } from "./Entity.js";
+import { createBullet } from "./Factory.js";
 
 export class Enemy extends Entity {
     static direction = 1; // Shared horizontal direction (1 for right, -1 for left)
@@ -15,6 +16,22 @@ export class Enemy extends Entity {
         this.marchBounds = this.randomizeBounds(); // Initialize random march bounds
         this.originalPosition = [0, 0, 0]; // Stores the original position in the grid
         this.cycleTime = 0; // Timer for cycling appearance
+        this.attackCooldown = 3.0; // Cooldown timer for shooting bullets
+        this.targetPlayer = null; // Reference to the player entity
+        this.scene = null; // Scene reference
+        this.gl = null; // WebGL context
+        this.hasLeftGroup = false; // Whether the enemy has left the group to target the player
+    }
+
+    /**
+     * Sets the dependencies needed for the enemy's behavior.
+     * @param {Object} config - Configuration object.
+     * @param {Scene} config.scene - The scene to add bullets to.
+     * @param {WebGLRenderingContext} config.gl - The WebGL context.
+     */
+    setDependencies({ scene, gl }) {
+        this.scene = scene;
+        this.gl = gl;
     }
 
     /**
@@ -26,8 +43,64 @@ export class Enemy extends Entity {
     }
 
     /**
-     * Updates the enemy's position and appearance.
+     * Updates the enemy's position and behavior.
      * @param {number} deltaTime - Time elapsed since the last update.
+     */
+    update(deltaTime) {
+        if (this.targetPlayer) {
+            // Behavior when targeting the player
+            this.attackCooldown -= deltaTime;
+
+            if (!this.hasLeftGroup) {
+                console.log("Enemy is leaving the group to target the player.");
+                this.hasLeftGroup = true; // Mark as left the group
+            }
+
+            const directionToPlayer = [
+                this.targetPlayer.position[0] - this.position[0],
+                this.targetPlayer.position[1] - this.position[1],
+                this.targetPlayer.position[2] - this.position[2],
+            ];
+
+            const distanceToPlayer = Math.sqrt(
+                directionToPlayer[0] ** 2 +
+                directionToPlayer[1] ** 2 +
+                directionToPlayer[2] ** 2
+            );
+
+            const normalizedDirection = directionToPlayer.map((d) => d / distanceToPlayer);
+
+            this.position = this.position.map(
+                (p, i) => p + normalizedDirection[i] * this.marchSpeed * deltaTime
+            );
+
+            console.log(this.attackCooldown);
+
+            // Shoot at the player when cooldown expires
+            if (this.attackCooldown <= 0 && this.scene && this.gl) {
+                console.log("Enemy should be shooting.");
+                this.shoot(normalizedDirection);
+                this.attackCooldown = 3.0; // Reset cooldown
+            }
+        } else {
+            // Regular group behavior handled in groupUpdate
+        }
+
+        // Update the model matrix for rendering
+        super.update(deltaTime);
+
+        // Handle appearance cycling
+        this.cycleTime += deltaTime;
+        if (this.cycleTime >= 0.5) {
+            this.cycleAppearance();
+            this.cycleTime = 0;
+        }
+    }
+
+    /**
+     * Handles synchronized group behavior for all enemies.
+     * @param {number} deltaTime - Time elapsed since the last update.
+     * @param {Array<Enemy>} enemies - Array of all enemy instances.
      */
     static groupUpdate(deltaTime, enemies) {
         // Handle cooldown timer for descent
@@ -47,13 +120,15 @@ export class Enemy extends Entity {
 
             let allAligned = true;
             for (const enemy of enemies) {
-                // Ensure grid alignment for descent
-                const targetPosZ = enemy.originalPosition[2] + targetZ;
-                enemy.position[2] += (targetPosZ - enemy.position[2]) * 0.1;
+                if (!enemy.targetPlayer) {
+                    // Ensure grid alignment for descent
+                    const targetPosZ = enemy.originalPosition[2] + targetZ;
+                    enemy.position[2] += (targetPosZ - enemy.position[2]) * 0.1;
 
-                // Check if this enemy is aligned with the target row
-                if (Math.abs(enemy.position[2] - targetPosZ) > 0.01) {
-                    allAligned = false;
+                    // Check if this enemy is aligned with the target row
+                    if (Math.abs(enemy.position[2] - targetPosZ) > 0.01) {
+                        allAligned = false;
+                    }
                 }
             }
 
@@ -65,29 +140,37 @@ export class Enemy extends Entity {
         } else {
             // Handle marching logic
             for (const enemy of enemies) {
-                enemy.position[0] += Enemy.direction * enemy.marchSpeed * deltaTime;
+                if (!enemy.targetPlayer) {
+                    enemy.position[0] += Enemy.direction * enemy.marchSpeed * deltaTime;
 
-                // Reverse direction if bounds are exceeded
-                if (
-                    enemy.position[0] > enemy.marchBounds ||
-                    enemy.position[0] < -enemy.marchBounds
-                ) {
-                    Enemy.direction *= -1; // Reverse direction
+                    // Reverse direction if bounds are exceeded
+                    if (
+                        enemy.position[0] > enemy.marchBounds ||
+                        enemy.position[0] < -enemy.marchBounds
+                    ) {
+                        Enemy.direction *= -1; // Reverse direction
+                    }
                 }
             }
         }
 
-        // Cycle appearance for all enemies
+        // Update individual enemies
         for (const enemy of enemies) {
-            enemy.cycleTime += deltaTime;
-            if (enemy.cycleTime >= 0.5) {
-                enemy.cycleAppearance();
-                enemy.cycleTime = 0;
-            }
-
-            // Update model matrix for rendering
             enemy.update(deltaTime);
         }
+    }
+
+    /**
+     * Shoots a bullet in the specified direction.
+     * @param {Array<number>} direction - The direction to shoot the bullet.
+     */
+    async shoot(direction) {
+        const bulletPosition = [...this.position];
+        bulletPosition[1] -= 0.5; // Slightly below the enemy
+
+        const bullet = await createBullet(bulletPosition, direction, 5.0, [this], this.gl);
+        this.scene.addEntity(bullet);
+        console.log("Enemy fired a bullet!");
     }
 
     /**
@@ -97,6 +180,10 @@ export class Enemy extends Entity {
         this.material.setUniform("uColor", [Math.random(), Math.random(), Math.random(), 1.0]); // Change color
     }
 
+    /**
+     * Destroys the enemy and logs the action.
+     * @param {Scene} scene - The scene to remove the enemy from.
+     */
     destroy(scene) {
         super.destroy(scene); // Call the base class destroy method
         console.log("Enemy destroyed!");

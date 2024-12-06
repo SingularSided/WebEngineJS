@@ -51,20 +51,36 @@ async function main() {
     engine.scene.addEntity(player);
 
     // Enemies
+// Enemies
     const enemies = [];
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 4; j++) {
             const enemy = await createEnemy('./assets/cube.obj', './assets/Textures/RockyWalls_BaseColorWall_1Final.png', gl);
+
+            // Set initial position in a grid
             enemy.position = [-3 + j * 2, 0, 2 - i * 1.5 - 15];
             enemy.originalPosition = [...enemy.position];
+
+            // Assign player as the target
+          //  enemy.targetPlayer = player;
+
+            // Set dependencies for the enemy (scene and WebGL context)
+            enemy.setDependencies({
+                scene: engine.scene,
+                gl: gl
+            });
+
+            // Add enemy to the scene and enemies array
             engine.scene.addEntity(enemy);
             enemies.push(enemy);
         }
     }
 
+
     // Bullet Manager
     const bulletManager = new BulletManager();
     let lastShootTime = 0;
+    let lastTargetTime = 0;
 
     // Update function
     engine.OnUpdate.Connect((deltaTime) => {
@@ -79,6 +95,21 @@ async function main() {
         }
 
         bulletManager.update(deltaTime, engine.scene);
+
+        // Update the timer
+        lastTargetTime += deltaTime;
+
+        if (lastTargetTime >= 3.0) {
+            // Reset the timer
+            lastTargetTime = 0;
+
+            // Choose a random enemy that is not already targeting the player
+            const eligibleEnemies = enemies.filter(enemy => !enemy.targetPlayer && !enemy.isDestroyed);
+            if (eligibleEnemies.length > 0) {
+                const randomEnemy = eligibleEnemies[Math.floor(Math.random() * eligibleEnemies.length)];
+                randomEnemy.targetPlayer = player;
+            }
+        }
 
         // Update enemies
         Enemy.groupUpdate(deltaTime, enemies);
