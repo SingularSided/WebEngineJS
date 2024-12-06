@@ -198,32 +198,32 @@ function updateEnemies(deltaTime, enemies, player, engine) {
     Enemy.groupUpdate(deltaTime, enemies);
     // enemies.forEach((enemy) => enemy.update(deltaTime));
     //
-    // enemies.forEach((enemy) => {
-    //     if (enemy.isDestroyed) return;
-    //
-    //     // Check for collision with the player
-    //     if (checkCollision(player, enemy)) {
-    //         console.log('Collision detected! Destroying both player and enemy.');
-    //
-    //         // Remove from the scene
-    //         engine.scene.removeEntity(enemy);
-    //         engine.scene.removeEntity(player);
-    //
-    //         // Destroy both the enemy and the player
-    //         enemy.destroy(engine.scene);
-    //         player.destroy(engine.scene);
-    //
-    //         // Delay the game-over alert slightly
-    //         setTimeout(() => {
-    //             alert('Game Over!');
-    //             // Optional: Stop the game loop or reset the game
-    //             engine.stop();
-    //         }, 100); // 100ms delay to ensure rendering updates
-    //     }
-    // });
-    //
-    // // Remove destroyed entities from the enemies array
-    // enemies = enemies.filter(enemy => !enemy.isDestroyed);
+    enemies.forEach((enemy) => {
+        if (enemy.isDestroyed) return;
+
+        // Check for collision with the player
+        if (checkCollision(player, enemy)) {
+            console.log('Collision detected! Destroying both player and enemy.');
+
+            // Remove from the scene
+            engine.scene.removeEntity(enemy);
+            engine.scene.removeEntity(player);
+
+            // Destroy both the enemy and the player
+            enemy.destroy(engine.scene);
+            player.destroy(engine.scene);
+
+            // Delay the game-over alert slightly
+            setTimeout(() => {
+                alert('Game Over!');
+                // Optional: Stop the game loop or reset the game
+                engine.stop();
+            }, 100); // 100ms delay to ensure rendering updates
+        }
+    });
+
+    // Remove destroyed entities from the enemies array
+    enemies = enemies.filter(enemy => !enemy.isDestroyed);
 }
 
 
