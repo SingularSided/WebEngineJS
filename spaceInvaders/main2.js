@@ -4,6 +4,9 @@ import { Enemy } from '../engine/Enemy.js';
 import { BulletManager } from '../engine/BulletManager.js';
 import { createPlayer, createEnemy, createBullet } from '../engine/Factory.js';
 
+const engine = new Engine("webgl-canvas");
+
+
 async function shootBullet(player, bulletManager, engine, gl) {
     const bulletPosition = [...player.position];
     bulletPosition[1] += 0.5; // Slightly above the player
@@ -18,7 +21,6 @@ async function shootBullet(player, bulletManager, engine, gl) {
  * Main function to initialize the engine and render the scene.
  */
 async function main() {
-    const engine = new Engine("webgl-canvas");
     engine.init();
 
     const gl = engine.renderer.gl;
@@ -62,7 +64,7 @@ async function main() {
             enemy.originalPosition = [...enemy.position];
 
             // Assign player as the target
-          //  enemy.targetPlayer = player;
+            //  enemy.targetPlayer = player;
 
             // Set dependencies for the enemy (scene and WebGL context)
             enemy.setDependencies({

@@ -23,12 +23,13 @@
 <!-- WebGL canvas -->
 <canvas id="webgl-canvas"></canvas>
 
-<!-- Your main JavaScript -->
-<script type="module" src="./main.js"></script>
+<!-- Initial JavaScript (set to main1.js) -->
+<script id="main-script" type="module" src="./main1.js"></script>
 
 <script>
-  // Automatically adjust the canvas size to fit the window
   const canvas = document.getElementById('webgl-canvas');
+
+  // Automatically adjust the canvas size to fit the window
   const resizeCanvas = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -37,6 +38,37 @@
   // Resize on window resize
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas(); // Initialize to set the size immediately
+
+  // Script toggling logic
+  let currentScript = './main1.js'; // Start with main1.js
+
+  const toggleScript = () => {
+    // Determine the new script
+    const newScript = currentScript === './main1.js' ? './main2.js' : './main1.js';
+
+    // Remove the current script
+    const oldScript = document.getElementById('main-script');
+    if (oldScript) {
+      oldScript.remove();
+    }
+
+    // Add the new script with cache-busting query
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = newScript + '?t=' + new Date().getTime(); // Cache busting
+    script.id = 'main-script';
+    document.body.appendChild(script);
+
+    // Update the current script reference
+    currentScript = newScript;
+  };
+
+  // Listen for "!" key press
+  document.addEventListener('keydown', (event) => {
+    if (event.key === '!') {
+      toggleScript();
+    }
+  });
 </script>
 </body>
 </html>

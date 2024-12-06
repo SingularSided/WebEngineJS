@@ -10,6 +10,8 @@ export class Engine {
         this.scene = new Scene();
         this.lastTime = 0; // Time tracking for delta time
         this.OnUpdate = new Event();
+        this.isRunning = false; // Track whether the engine is running
+        this.requestId = null; // Store the requestAnimationFrame ID
     }
 
     init() {
@@ -27,16 +29,34 @@ export class Engine {
     }
 
     gameLoop(timestamp) {
+        if (!this.isRunning) return; // Exit the loop if the engine is stopped
+
         const deltaTime = Math.min((timestamp - this.lastTime) / 1000, 1/30);
         this.lastTime = timestamp;
 
         this.update(deltaTime);
         this.render();
 
-        requestAnimationFrame(this.gameLoop.bind(this));
+        this.requestId = requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     start() {
-        requestAnimationFrame(this.gameLoop.bind(this));
+        if (this.isRunning) return; // Prevent starting if already running
+
+        this.isRunning = true;
+        this.lastTime = performance.now(); // Reset the timestamp
+        this.requestId = requestAnimationFrame(this.gameLoop.bind(this));
+    }
+
+    stop() {
+        if (!this.isRunning) return; // Prevent stopping if already stopped
+
+        this.isRunning = false;
+        if (this.requestId !== null) {
+            cancelAnimationFrame(this.requestId); // Cancel the animation frame
+            this.requestId = null; // Clear the stored ID
+        }
+
+        console.log("Engine stopped");
     }
 }
