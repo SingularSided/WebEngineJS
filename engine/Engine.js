@@ -20,11 +20,14 @@ export class Engine {
     }
 
     update(deltaTime) {
+        if(!this.isRunning) {return;}
         this.OnUpdate.Fire(deltaTime);
         this.scene.update(deltaTime, this.input, this.renderer.gl.canvas);
     }
 
     render() {
+        if(!this.isRunning) {return;}
+
         this.renderer.render(this.scene);
     }
 

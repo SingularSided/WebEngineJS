@@ -93,6 +93,9 @@ async function main() {
 
     // Update function
     engine.OnUpdate.Connect((deltaTime) => {
+        if(!engine.isRunning) {
+            return false;
+        }
         const currentTime = engine.lastTime;
 
         // Handle player input
@@ -125,6 +128,9 @@ async function main() {
 
         // Check collisions between bullets and enemies
         bulletManager.checkCollisions(enemies, engine.scene, (bullet, enemy) => {
+            if(!engine.isRunning) {
+                return false;
+            }
             if (bullet.ignoreList.includes(enemy)) {
                 // Skip destruction if the enemy is in the ignore list
                 return;
@@ -137,6 +143,9 @@ async function main() {
         });
 
         bulletManager.checkCollisions([player], engine.scene, (bullet, player) => {
+            if(!engine.isRunning) {
+                return false;
+            }
             console.log('Bullet hit enemy!');
             engine.scene.removeEntity(player);
             bullet.destroy(engine.scene);
@@ -148,6 +157,9 @@ async function main() {
 
         // Check collision between player and enemies
         enemies.forEach((enemy) => {
+            if(!engine.isRunning) {
+                return false;
+            }
             if (!enemy.isDestroyed && checkCollision(player, enemy)) {
                 console.log('Player collided with enemy!');
                 engine.scene.removeEntity(player);
