@@ -285,7 +285,7 @@ async function main() {
 
    // const player = createPlayer()
     const player = await createPlayer('./assets/spaceship8.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
-    player.position = [0, 1, -5];
+    player.position = [0, 0, -5];
     player.scale = [0.1, 0.1, 0.1];
     engine.scene.addEntity(player);
 
