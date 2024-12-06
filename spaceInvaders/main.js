@@ -64,13 +64,17 @@ async function main() {
 
     // Bullet Manager
     const bulletManager = new BulletManager();
+    let lastShootTime = 0;
 
     // Update function
     engine.OnUpdate.Connect((deltaTime) => {
+        const currentTime = engine.lastTime;
+
         // Handle player input
         player.handleInput(engine.input, deltaTime);
 
-        if (engine.input.isKeyPressed('Space')) {
+        if (engine.input.isKeyPressed('Space') && currentTime - lastShootTime >= 1000) {
+            lastShootTime = currentTime; // Reset the cooldown
             shootBullet(player, bulletManager, engine, gl);
         }
 
