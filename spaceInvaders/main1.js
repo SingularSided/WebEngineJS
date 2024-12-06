@@ -54,7 +54,7 @@ async function main() {
     engine.scene.addLight(light2);
 
     // Player
-    const player = await createPlayer('./assets/spaceship8.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
+    const player = await createPlayer('./assets/cube.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
     player.position = [0, 0, -5];
     engine.scene.addEntity(player);
 

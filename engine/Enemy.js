@@ -48,6 +48,9 @@ export class Enemy extends Entity {
      */
     update(deltaTime) {
         if (this.targetPlayer) {
+            this.cycleAppearance();
+
+
             // Behavior when targeting the player
             this.attackCooldown -= deltaTime;
 
@@ -90,11 +93,11 @@ export class Enemy extends Entity {
         super.update(deltaTime);
 
         // Handle appearance cycling
-        this.cycleTime += deltaTime;
-        if (this.cycleTime >= 0.5) {
-            this.cycleAppearance();
-            this.cycleTime = 0;
-        }
+        // this.cycleTime += deltaTime;
+        // if (this.cycleTime >= 0.5) {
+        //     this.cycleAppearance();
+        //     this.cycleTime = 0;
+        // }
     }
 
     /**
@@ -177,6 +180,7 @@ export class Enemy extends Entity {
      * Changes the enemy's appearance (e.g., color or scale).
      */
     cycleAppearance() {
+        this.scale = [0.8,0.8,0.8]
         this.material.setUniform("uColor", [Math.random(), Math.random(), Math.random(), 1.0]); // Change color
     }
 

@@ -6,6 +6,12 @@ import { createPlayer, createEnemy, createBullet } from '../engine/Factory.js';
 
 const engine = new Engine("webgl-canvas");
 
+async function endGame() {
+    setTimeout(() => {
+        alert('Game Over!');
+        engine.stop();
+    }, 100); // Delay the alert slightly for better rendering
+}
 
 async function shootBullet(player, bulletManager, engine, gl) {
     const bulletPosition = [...player.position];
@@ -57,7 +63,7 @@ async function main() {
     const enemies = [];
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 4; j++) {
-            const enemy = await createEnemy('./assets/cube.obj', './assets/Textures/RockyWalls_BaseColorWall_1Final.png', gl);
+            const enemy = await createEnemy('./assets/spaceship5.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
 
             // Set initial position in a grid
             enemy.position = [-3 + j * 2, 0, 2 - i * 1.5 - 15];
@@ -134,10 +140,7 @@ async function main() {
             engine.scene.removeEntity(player);
             bullet.destroy(engine.scene);
 
-            setTimeout(() => {
-                alert('Game Over!');
-                engine.stop();
-            }, 100); // Delay the alert slightly for better rendering
+            endGame();
         });
 
 
@@ -151,10 +154,7 @@ async function main() {
                 player.destroy(engine.scene);
                 enemy.destroy(engine.scene);
 
-                setTimeout(() => {
-                    alert('Game Over!');
-                    engine.stop();
-                }, 100); // Delay the alert slightly for better rendering
+                endGame();
             }
         });
 
