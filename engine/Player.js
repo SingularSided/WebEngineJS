@@ -36,6 +36,16 @@ export class Player extends Entity {
             this.rotation[2] = -Math.PI / 10; // Tilt right for animation
         }
 
+        // Move up
+        if (input.isKeyPressed('ArrowUp')) {
+            this.position[1] += moveDistance;
+        }
+
+        // Move down
+        if (input.isKeyPressed('ArrowDown')) {
+            this.position[1] -= moveDistance;
+        }
+
         // Stop tilting when no input
         if (!input.isKeyPressed('ArrowLeft') && !input.isKeyPressed('ArrowRight')) {
             this.rotation[2] = 0;

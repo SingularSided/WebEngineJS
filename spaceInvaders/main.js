@@ -197,9 +197,9 @@ async function main() {
     console.log('Lights:', engine.scene.lights);
 
    // const player = createPlayer()
-    const player = await createPlayer('./assets/cube.obj', './assets/Textures/abe.png', gl);
+    const player = await createPlayer('./assets/spaceship8.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
     player.position = [0, 1, -5];
-    player.scale = [1, 1, 1];
+    player.scale = [0.1, 0.1, 0.1];
     engine.scene.addEntity(player);
 
     player.material.compile();
