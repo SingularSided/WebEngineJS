@@ -28,10 +28,12 @@ class Scene {
 
     /**
      * Removes an entity from the scene.
-     * @param {Entity} entity - The entity to remove.
      */
     removeEntity(entity) {
-        this.entities = this.entities.filter(e => e !== entity);
+        const index = this.entities.indexOf(entity);
+        if (index !== -1) {
+            this.entities.splice(index, 1);
+        }
     }
 
     /**

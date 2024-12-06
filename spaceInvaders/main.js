@@ -187,31 +187,47 @@ async function addEnemies(engine, player) {
 
 let descendingEnemies = []; // Track descending enemies
 
-function updateEnemies(deltaTime, enemies, player) {
-    enemies.forEach((enemy) => enemy.update(deltaTime));
-    // enemies.forEach((enemy) => {
-    //     // Check if any enemies should start descending
-    //     if (!enemy.isDescending && Math.random() < 0.005) {
-    //         enemy.isDescending = true;
-    //         descendingEnemies.push(enemy);
-    //     }
-    //
-    //     // Update enemy logic
-    //     enemy.update(deltaTime);
-    // });
-    //
-    //
-    //
-    // // Handle collisions (simplified logic here)
-    // descendingEnemies.forEach((enemy) => {
-    //     if (checkCollision(player, enemy)) {
-    //         console.log('Collision! Game Over!');
-    //         // Implement game-over logic here
-    //     }
-    // });
+function sleepSync(ms) {
+    const start = Date.now();
+    while (Date.now() - start < ms) {
+        // Busy-wait loop
+    }
 }
 
+function updateEnemies(deltaTime, enemies, player, engine) {
+    enemies.forEach((enemy) => enemy.update(deltaTime));
+
+    enemies.forEach((enemy) => {
+        if (enemy.isDestroyed) return;
+
+        // Check for collision with the player
+        if (checkCollision(player, enemy)) {
+            console.log('Collision detected! Destroying both player and enemy.');
+
+            // Remove from the scene
+            engine.scene.removeEntity(enemy);
+            engine.scene.removeEntity(player);
+
+            // Destroy both the enemy and the player
+            enemy.destroy(engine.scene);
+            player.destroy(engine.scene);
+
+            // Delay the game-over alert slightly
+            setTimeout(() => {
+                alert('Game Over!');
+                // Optional: Stop the game loop or reset the game
+                engine.stop();
+            }, 100); // 100ms delay to ensure rendering updates
+        }
+    });
+
+    // Remove destroyed entities from the enemies array
+    enemies = enemies.filter(enemy => !enemy.isDestroyed);
+}
+
+
 function checkCollision(entity1, entity2) {
+    if(entity1 == null || entity2 == null) { return false; }
     const distance = Math.sqrt(
         Math.pow(entity1.position[0] - entity2.position[0], 2) +
         Math.pow(entity1.position[1] - entity2.position[1], 2) +
@@ -280,7 +296,7 @@ async function main() {
 
     engine.OnUpdate.Connect((deltaTime) => {
         player.handleInput(engine.input, deltaTime);
-        updateEnemies(deltaTime, enemies, player);
+        updateEnemies(deltaTime, enemies, player, engine);
     });
 
     engine.start();

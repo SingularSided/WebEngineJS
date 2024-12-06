@@ -135,4 +135,33 @@ export class Entity extends Transformable {
         // Draw the entity
         gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
     }
+
+    /**
+     * Destroys the entity, removing it from the scene and cleaning up resources.
+     * @param {Scene} scene - The scene to remove the entity from.
+     */
+    destroy(scene) {
+        // Remove this entity from the scene
+        const index = scene.entities.indexOf(this);
+        if (index !== -1) {
+            scene.entities.splice(index, 1); // Remove from the scene's entity list
+        }
+
+        // Mark the entity as destroyed
+        this.isDestroyed = true;
+
+        // Release resources if needed (e.g., WebGL buffers)
+        this.cleanupBuffers();
+    }
+
+    /**
+     * Cleans up WebGL buffers associated with this entity.
+     */
+    cleanupBuffers() {
+        const gl = this.material.gl;
+        if (this.vertexBuffer) gl.deleteBuffer(this.vertexBuffer);
+        if (this.indexBuffer) gl.deleteBuffer(this.indexBuffer);
+        if (this.normalBuffer) gl.deleteBuffer(this.normalBuffer);
+        if (this.texCoordBuffer) gl.deleteBuffer(this.texCoordBuffer);
+    }
 }

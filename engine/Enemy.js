@@ -63,4 +63,9 @@ export class Enemy extends Entity {
     cycleAppearance() {
         this.material.setUniform('uColor', [Math.random(), Math.random(), Math.random(), 1.0]); // Change color
     }
+
+    destroy(scene) {
+        super.destroy(scene); // Call the base class destroy method
+        console.log('Enemy destroyed!');
+    }
 }

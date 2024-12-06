@@ -67,4 +67,11 @@ export class Player extends Entity {
         this.rotation[1] += this.rotationSpeed * deltaTime;
         this.update();
     }
+
+    destroy(scene) {
+        super.destroy(scene); // Call the base class destroy method
+        console.log('Player destroyed! Game Over!');
+        // Additional logic for ending the game
+        //alert('Game Over!');
+    }
 }
