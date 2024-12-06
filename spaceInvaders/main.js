@@ -78,7 +78,7 @@ async function main() {
 
 
     // Bullet Manager
-    const bulletManager = new BulletManager();
+    const bulletManager = BulletManager.getInstance();
     let lastShootTime = 0;
     let lastTargetTime = 0;
 
@@ -116,12 +116,29 @@ async function main() {
 
         // Check collisions between bullets and enemies
         bulletManager.checkCollisions(enemies, engine.scene, (bullet, enemy) => {
+            if (bullet.ignoreList.includes(enemy)) {
+                // Skip destruction if the enemy is in the ignore list
+                return;
+            }
             console.log('Bullet hit enemy!');
             engine.scene.removeEntity(enemy);
             engine.scene.removeEntity(bullet);
             enemy.destroy(engine.scene);
             bullet.destroy(engine.scene);
         });
+
+        bulletManager.checkCollisions([player], engine.scene, (bullet, player) => {
+            console.log('Bullet hit enemy!');
+            engine.scene.removeEntity(player);
+            bullet.destroy(engine.scene);
+
+            setTimeout(() => {
+                alert('Game Over!');
+                engine.stop();
+            }, 100); // Delay the alert slightly for better rendering
+        });
+
+
 
         // Check collision between player and enemies
         enemies.forEach((enemy) => {
@@ -161,7 +178,7 @@ async function main() {
  * @returns {boolean} - Whether the two entities are colliding.
  */
 function checkCollision(entity1, entity2) {
-    if (!entity1 || !entity2) return false;
+    if (!entity1 || !entity2 || entity1 === entity2) return false; // Avoid self-collision
 
     const distance = Math.sqrt(
         Math.pow(entity1.position[0] - entity2.position[0], 2) +

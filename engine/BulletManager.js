@@ -1,8 +1,25 @@
 import { createBullet } from './Factory.js';
 
 export class BulletManager {
+    static instance = null; // Singleton instance
+
     constructor() {
-        this.bullets = []; // List of active bullets
+        if (BulletManager.instance) {
+            return BulletManager.instance; // Return existing instance if it exists
+        }
+        this.bullets = []; // Instance-based bullets array
+        BulletManager.instance = this; // Set this as the singleton instance
+    }
+
+    /**
+     * Creates or fetches the singleton instance.
+     * @returns {BulletManager} - The singleton instance of BulletManager.
+     */
+    static getInstance() {
+        if (!BulletManager.instance) {
+            new BulletManager(); // Initialize instance if not created yet
+        }
+        return BulletManager.instance;
     }
 
     /**

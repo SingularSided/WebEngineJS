@@ -1,5 +1,5 @@
 import { Entity } from "./Entity.js";
-import { createBullet } from "./Factory.js";
+import {BulletManager} from "./BulletManager.js";
 
 export class Enemy extends Entity {
     static direction = 1; // Shared horizontal direction (1 for right, -1 for left)
@@ -168,7 +168,7 @@ export class Enemy extends Entity {
         const bulletPosition = [...this.position];
         bulletPosition[1] -= 0.5; // Slightly below the enemy
 
-        const bullet = await createBullet(bulletPosition, direction, 5.0, [this], this.gl);
+        const bullet = await BulletManager.getInstance().getBullet(bulletPosition, direction, 5.0, [this], this.gl);
         this.scene.addEntity(bullet);
         console.log("Enemy fired a bullet!");
     }
