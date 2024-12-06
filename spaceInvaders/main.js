@@ -160,21 +160,20 @@ async function createPlayer(objUrl, textureUrl, gl) {
     return player;
 }
 
+
+
 async function addEnemies(engine, player) {
     const gl = engine.renderer.gl;
 
     const enemies = [];
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 4; j++) {
-            const enemy = await createEnemy('./assets/spaceship8.obj', './assets/Textures/Tiledfloor_basecolor.png', gl);
-            enemy.position = [-3 + j * 2, 2 - i * 1.5, -25]; // Grid layout
-            enemy.scale = [0.1, 0.1, 0.1];
+            const enemy = await createEnemy('./assets/cube.obj', './assets/Textures/RockyWalls_BaseColorWall_1Final.png', gl);
+            enemy.position = [-3 + j * 2,0,  2 - i * 1.5 -15]; // Grid layout
+            enemy.originalPosition = [...enemy.position];
 
-            // Optional: Make the enemy target the player
-            if (Math.random() < 0.5) { // 50% chance to target player
-                enemy.targetPlayer = player;
-            }
-
+            enemy.scale = [0.4, 0.4, 0.4];
+            //enemy.targetPlayer = player; // Set the player as the target
             enemies.push(enemy);
             engine.scene.addEntity(enemy);
         }
@@ -182,27 +181,34 @@ async function addEnemies(engine, player) {
 
     return enemies;
 }
+
+
+
+
 let descendingEnemies = []; // Track descending enemies
 
 function updateEnemies(deltaTime, enemies, player) {
-    enemies.forEach((enemy) => {
-        // Check if any enemies should start descending
-        if (!enemy.isDescending && Math.random() < 0.005) {
-            enemy.isDescending = true;
-            descendingEnemies.push(enemy);
-        }
-
-        // Update enemy logic
-        enemy.update(deltaTime);
-    });
-
-    // Handle collisions (simplified logic here)
-    descendingEnemies.forEach((enemy) => {
-        if (checkCollision(player, enemy)) {
-            console.log('Collision! Game Over!');
-            // Implement game-over logic here
-        }
-    });
+    enemies.forEach((enemy) => enemy.update(deltaTime));
+    // enemies.forEach((enemy) => {
+    //     // Check if any enemies should start descending
+    //     if (!enemy.isDescending && Math.random() < 0.005) {
+    //         enemy.isDescending = true;
+    //         descendingEnemies.push(enemy);
+    //     }
+    //
+    //     // Update enemy logic
+    //     enemy.update(deltaTime);
+    // });
+    //
+    //
+    //
+    // // Handle collisions (simplified logic here)
+    // descendingEnemies.forEach((enemy) => {
+    //     if (checkCollision(player, enemy)) {
+    //         console.log('Collision! Game Over!');
+    //         // Implement game-over logic here
+    //     }
+    // });
 }
 
 function checkCollision(entity1, entity2) {
@@ -226,16 +232,9 @@ async function main() {
     const gl = engine.renderer.gl;
 
     const camera = engine.scene.camera;
-// Set camera position (e.g., above and behind the player)
     camera.position = [0, 20, -10];
-
-// Set the direction the camera looks at (e.g., towards the origin)
     camera.lookAt = [0, -1, 0]; // Look downward at a slight angle
-
-// Ensure the up direction remains consistent
     camera.up = [0, 0, -1]; // Y-axis is up
-
-// Update camera matrices
     camera.update(engine.renderer.gl.canvas);
 
 

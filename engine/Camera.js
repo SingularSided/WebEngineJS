@@ -2,21 +2,21 @@ import { mat4, vec3 } from '../node_modules/gl-matrix/esm/index.js';
 
 export class Camera {
     constructor() {
-        this.position = [0, 0, 0]; // Camera position
-        this.lookAt = [0, 0, -1]; // Look-at direction (default: forward)
-        this.up = [0, 1, 0]; // Up direction (default: world up)
+        this.position = [0, 10, 0]; // Default position (above the scene)
+        this.lookAt = [0, -1, 0]; // Default look direction (downward)
+        this.up = [0, 0, -1]; // Default up direction for the camera
         this.viewMatrix = mat4.create();
         this.projectionMatrix = mat4.create();
     }
 
     /**
-     * Updates the view matrix based on the camera's position and look-at vector.
+     * Updates the view matrix using position, lookAt direction, and up vector.
      */
     updateViewMatrix() {
-        // Calculate the target position based on the lookAt vector and position
+        // Calculate the target position using the lookAt vector
         const target = vec3.add(vec3.create(), this.position, this.lookAt);
 
-        // Create the view matrix using lookAt transformation
+        // Construct the view matrix
         mat4.lookAt(this.viewMatrix, this.position, target, this.up);
     }
 
@@ -30,12 +30,12 @@ export class Camera {
             Math.PI / 4, // 45-degree field of view
             canvas.width / canvas.height, // Aspect ratio
             0.1, // Near clipping plane
-            100  // Far clipping plane
+            1000  // Far clipping plane
         );
     }
 
     /**
-     * Updates the camera matrices (view and projection).
+     * Updates the camera's matrices (view and projection).
      * @param {HTMLCanvasElement} canvas - The canvas to get the aspect ratio.
      */
     update(canvas) {
@@ -44,7 +44,7 @@ export class Camera {
     }
 
     /**
-     * Returns the current view matrix.
+     * Returns the view matrix.
      * @returns {mat4}
      */
     getViewMatrix() {
@@ -52,10 +52,29 @@ export class Camera {
     }
 
     /**
-     * Returns the current projection matrix.
+     * Returns the projection matrix.
      * @returns {mat4}
      */
     getProjectionMatrix() {
         return this.projectionMatrix;
+    }
+
+    /**
+     * Points the camera directly at a specific target position.
+     * @param {Array<number>} target - The [x, y, z] coordinates of the target.
+     */
+    lookAtTarget(target) {
+        vec3.subtract(this.lookAt, target, this.position); // Calculate direction
+        vec3.normalize(this.lookAt, this.lookAt); // Normalize to a unit vector
+    }
+
+    /**
+     * Sets the camera's position and aligns it to look at a specific target.
+     * @param {Array<number>} position - The new camera position.
+     * @param {Array<number>} target - The [x, y, z] coordinates of the target.
+     */
+    setPositionAndLookAt(position, target) {
+        this.position = position;
+        this.lookAtTarget(target); // Update lookAt based on the target
     }
 }
